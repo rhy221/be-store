@@ -1,5 +1,4 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UserDto } from '../user/dtos/user.dto';
 import * as jwt from 'jsonwebtoken'
 import { ConfigService } from '@nestjs/config';
 import { JwtSignOptions } from '@nestjs/jwt';
@@ -13,16 +12,6 @@ export class AuthService {
         private readonly configService: ConfigService, 
         private readonly userService: UserService,
         private readonly mailService: MailService){}
-
-    async register(dto: UserDto) {
-        
-        const user = await this.userService.create(dto);
-
-        const token = this.createJwt(user);
-
-        await this.mailService.sendVerificationEmail(dto.email, token);
-
-    }
 
 
     createJwt(user: User): string {

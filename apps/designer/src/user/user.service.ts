@@ -2,15 +2,15 @@ import { User } from '@app/database/schemas/user.schema';
 import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { UserDto } from './dtos/user.dto';
 import * as bcrypt from 'bcryptjs';
+import { RegisterDto } from '../auth/auth.dto';
 
 @Injectable()
 export class UserService {
 
     constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
     
-    async create(dto: UserDto): Promise<User> {
+    async create(dto: RegisterDto): Promise<User> {
       try {
         const created = new this.userModel({...dto, verified: false});
         return await created.save();
