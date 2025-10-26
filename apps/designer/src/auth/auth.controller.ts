@@ -1,12 +1,10 @@
 import { Body, Controller, Post, Query, Req, UseGuards } from '@nestjs/common';
-import { UserDto } from '../user/dtos/user.dto';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
-import { ResetpassDto } from '../user/dtos/resetpass.dto';
-
+import { ForgotPasswordDto, LoginDto, RegisterDto, ResendEmailVerificationDto, ResetPasswordDto, VerifyMailDto } from './auth.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -19,50 +17,53 @@ export class AuthController {
     
 
     @Post('register')
-    async register(@Body() dto: UserDto) {
+    async register(@Body() dto: RegisterDto) {
 
         const user = await this.userService.create(dto);
 
         const token = this.authService.createJwt(user);
 
-        return await this.mailService.sendVerificationEmail(dto.email, token);
+        return await this.mailService.sendVerificationEmail(dto.email, token, dto.origin ?? "");
     }
 
     @Post('send-verifyemail')
-    async sendVerifyEmail(@Body() dto: UserDto) {
+    async sendVerifyEmail(@Body() dto: ResendEmailVerificationDto) {
 
         const user = await this.userService.findOneByEmail(dto.email);
         
         if(user != null && !user.verified) {
             const token = this.authService.createJwt(user);
-            return await this.mailService.sendVerificationEmail(dto.email, token);
+            return await this.mailService.sendVerificationEmail(dto.email, token, dto.origin ?? "");
         }
         
-        return 'Email does not exist or has been verified';
+        return {
+            error: 'Email does not exist or has been verified'
+        }
     }
 
-    @Post('send-resetpassemail')
-    async sendResetPassEmail(@Body() dto: UserDto) {
+    @Post('forgot-password')
+    async forgotPassword(@Body() dto: ForgotPasswordDto) {
 
         const user = await this.userService.findOneByEmail(dto.email);
         
         if(user != null && user.verified) {
             const token = this.authService.createJwt(user);
-            return await this.mailService.sendVerificationEmail(dto.email, token);
+            return await this.mailService.sendResetPassEmail(dto.email, token, dto.origin ?? "");
         }
         
-        return 'Email does not exist or has been verified';
+        return {
+            error: 'Email does not exist or has been verified'
+        }
     }
 
-    @Post('verify/mail') 
-    async verifyJwt(@Query('token') token: string) {
-        
-        const payload = this.authService.verifyJwt(token);
+    @Post('verify') 
+    async verifyMail(@Body() dto: VerifyMailDto) {
+        const payload = this.authService.verifyJwt(dto.token);
         return await this.userService.verifyUser(payload['userId'], true);
     }
 
     @Post('login')
-    async login(@Body() dto: UserDto) {
+    async login(@Body() dto: LoginDto) {
         
         const user = await this.userService.findOneByEmail(dto.email);
         
@@ -71,7 +72,9 @@ export class AuthController {
             
             if(isTheSame) {
                 const token = this.authService.createJwt(user);
-                return token;  
+                return {
+                    token: token,
+                };  
             }
            
         }
@@ -79,11 +82,10 @@ export class AuthController {
         return {message: 'Wrong password or email'};
     }
 
-    @UseGuards(JwtGuard)
-    @Post('resetpass')
-    async resetPassword(@Req() req, @Body() dto: ResetpassDto) {
-        const id = req.user.userId;
-        return await this.userService.resetUserPass(id, dto.password)
+    @Post('reset-password')
+    async resetPassword(@Body() dto: ResetPasswordDto) {
+        const payload = this.authService.verifyJwt(dto.token);
+        return await this.userService.resetUserPass(payload['userId'], dto.password)
     }
 
    

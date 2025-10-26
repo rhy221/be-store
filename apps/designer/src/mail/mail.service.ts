@@ -18,8 +18,8 @@ export class MailService {
         });
     }
 
-    async sendVerificationEmail(to: string, token: string) {
-        const verifyUrl = `http://localhost:3000/auth/verify?token=${token}`;
+    async sendVerificationEmail(to: string, token: string, origin: string) {
+        const verifyUrl = `${origin}/?token=${token}`;
 
         const mailOptions = {
             from: `"HHCloset" <${"support@hhcloset.com"}>`,
@@ -40,8 +40,8 @@ export class MailService {
     }
     }
 
-    async sendResetPassEmail(to: string, token: string) {
-        const resetPassUrl = `http://localhost:3000/auth/verify?token=${token}`;
+    async sendResetPassEmail(to: string, token: string, origin: string) {
+        const resetPassUrl = `${origin}/?token=${token}`;
 
         const mailOptions = {
             from: `"HHCloset" <${"support@hhcloset.com"}>`,
