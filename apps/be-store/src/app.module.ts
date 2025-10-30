@@ -6,12 +6,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthModule } from './auth/auth.module';
 import { StorageModule } from './storage/storage.module';
 import { DbModule } from './db/db.module';
+import { CloudinaryStorageModule } from './storage/cloudinary.module';
 
 @Module({
   imports: [
     AuthModule,
     StorageModule,
     DbModule,
+    CloudinaryStorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],
