@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Res, UploadedFile, UseInterceptors } from "@nestjs/common";
+import { Controller, Get, Param, Post, Res, UploadedFile, UseInterceptors, Delete, HttpCode } from "@nestjs/common";
 import type { Response } from "express";
 import { CloudinaryStorageService } from "./cloudinary.service";
 import { FileInterceptor } from "@nestjs/platform-express";
@@ -25,5 +25,14 @@ export class ImagesController {
     const url = this.storage.getUrl(publicId, { transformation: { width: 800, crop: 'limit' } });
     if (!url) return res.status(404).json({ message: 'Not found' });
     return res.redirect(url);
+  }
+
+  @Delete(':publicId')
+  @HttpCode(204)
+  async remove(@Param('publicId') publicId: string) {
+    // Note: publicId may include folders (use URL-encoding for slashes)
+    await this.storage.delete(publicId);
+    // 204 No Content
+    return;
   }
 }
