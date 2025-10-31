@@ -10,6 +10,10 @@ import { CloudinaryStorageModule } from './storage/cloudinary.module';
 
 @Module({
   imports: [
+    ConfigModule.forRoot({
+  isGlobal: true,
+  envFilePath: ['apps/be-store/src/.env', '.env'],
+}),
     AuthModule,
     StorageModule,
     DbModule,

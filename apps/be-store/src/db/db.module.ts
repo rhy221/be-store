@@ -4,10 +4,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ 
-      isGlobal: true,
-      envFilePath: ['.env', 'apps/be-store/src/storage/.env'], 
-    }),
         MongooseModule.forRootAsync({
           imports: [ConfigModule],
           inject: [ConfigService],
