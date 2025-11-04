@@ -7,13 +7,17 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { DatabaseModule } from '@app/database';
 import { UserModule } from './user/user.module';
 import { MailModule } from './mail/mail.module';
+import { ProductModule } from './product/product.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
     AuthModule,
     DatabaseModule,
     UserModule,
-    MailModule
+    MailModule,
+    ProductModule,
+    AnalyticsModule,
   ],
   controllers: [DesignerController],
   providers: [DesignerService],
