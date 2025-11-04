@@ -4,15 +4,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
 import { RegisterDto } from '../auth/auth.dto';
+import { DesignerProfile } from '@app/database/schemas/designerProfile.shema';
+import { DesignerProfileDto, DesignerProfileUpdatingDto } from './user.dto';
 
 @Injectable()
 export class UserService {
 
-    constructor(@InjectModel(User.name) private readonly userModel: Model<User>) {}
+    constructor(@InjectModel(User.name) private readonly userModel: Model<User>,
+                @InjectModel(DesignerProfile.name) private readonly desingerProfileModel: Model<DesignerProfile> ) {}
     
     async create(dto: RegisterDto): Promise<User> {
       try {
-        const created = new this.userModel({...dto, verified: false});
+        const created = new this.userModel({...dto, role: ['designer'], verified: false});
         return await created.save();
       } catch (error) {
           if (error.code === 11000) {
@@ -23,7 +26,38 @@ export class UserService {
     
     }
 
-    async fintOneById(id: string) {
+    async createProfile(dto: DesignerProfileDto){
+      const created = new this.desingerProfileModel({...dto});
+      return await created.save();
+    }
+
+    async createInitialProfile(userid: string, email: string) {
+      const created = new this.desingerProfileModel({
+        userId: userid,
+        name: `${email.split('@')[0] ?? ""}`,
+        bio: "",
+        avatarUrl: "",
+        status: 'active',
+        followerCount: 0,
+        totalDesigns: 0,
+        totalSold: 0,
+        totalRevenue: 0,
+        likeCount: 0,
+        rating: 0
+      });
+
+      try {
+      return await created.save();
+
+      }
+      catch(error) {
+        console.log(error);
+      }
+    }
+
+
+
+    async findOneById(id: string) {
       return await this.userModel.findById(id);
     }
 
@@ -48,6 +82,21 @@ export class UserService {
     //   return isSame;
     // }
 
+    async findUserProfile(id: string, opt: 'basics' | 'statics' | null = null) {
+     
+      if(opt === 'basics') {
+        return await this.desingerProfileModel.findOne({userId: id}).select('userId name avatarUrl bio');
+      }
+      else if(opt === 'statics') {
+        return await this.desingerProfileModel.findOne({userId: id}).select('followerCount totalDesigns totalSold totalRevenue');
+      }
+
+      return await this.desingerProfileModel.findOne({userId: id}, {_id: 0}).lean();
+    }
+
+    async updateUserProfile(userId: string, dto: DesignerProfileUpdatingDto) {
+      return await this.desingerProfileModel.findOneAndUpdate({userId: userId}, {...dto}, {new: true}).select('userId name avatarUrl bio');
+    }
   
     
 }

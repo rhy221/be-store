@@ -59,7 +59,9 @@ export class AuthController {
     @Post('verify') 
     async verifyMail(@Body() dto: VerifyMailDto) {
         const payload = this.authService.verifyJwt(dto.token);
-        return await this.userService.verifyUser(payload['userId'], true);
+        const user = await this.userService.verifyUser(payload['userId'], true);
+        await this.userService.createInitialProfile(payload['userId'], payload['email']);
+        return user;
     }
 
     @Post('login')
@@ -72,9 +74,12 @@ export class AuthController {
             
             if(isTheSame) {
                 const token = this.authService.createJwt(user);
-                return {
-                    token: token,
+                const userProfile = await this.userService.findUserProfile(user._id as string, "basics");
+                const result =  {
+                    avatarUrl: userProfile?.avatarUrl,
+                    accessToken: token,
                 };  
+                return result; 
             }
            
         }

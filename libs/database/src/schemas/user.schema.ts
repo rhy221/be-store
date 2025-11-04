@@ -13,37 +13,10 @@ export class User extends Document {
     password: string;
 
     @Prop()
-    fullname:string;
-
-    @Prop()
-    name:string;
-
-    @Prop()
-    role: "customer" | "designer" | "admin";
-
-    @Prop()
-    avatarUrl:string;
-
-    @Prop()
-    bio: string;
+    role: ("customer" | "designer" | "admin")[];
 
     @Prop()
     state: "active" | "banned"
-
-    @Prop()
-    followersCount: number;
-
-    @Prop()
-    totalDesigns: number;
-
-    @Prop()
-    totalSold: number;
-
-    @Prop()
-    totalRevenue: number;
-
-    @Prop()
-    followingCount: number;
 
     @Prop()
     verified: boolean;

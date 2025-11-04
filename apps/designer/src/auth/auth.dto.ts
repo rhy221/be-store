@@ -25,14 +25,12 @@ export class RegisterDto {
     email: string;
 
     @IsString()
-    @MinLength(7)
+    @MinLength(8)
     password: string;
 
     @IsString()
     @IsOptional()
     origin?: string;
-
-    role = "customer";
 }
 
 export class ResendEmailVerificationDto {
@@ -66,7 +64,7 @@ export class ResetPasswordDto {
     token: string;
 
     @IsString()
-    @MinLength(7)
+    @MinLength(8)
     @IsNotEmpty()
     password: string;
 
