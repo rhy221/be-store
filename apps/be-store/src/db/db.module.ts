@@ -4,7 +4,6 @@ import { MongooseModule } from '@nestjs/mongoose';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
         MongooseModule.forRootAsync({
           imports: [ConfigModule],
           inject: [ConfigService],
