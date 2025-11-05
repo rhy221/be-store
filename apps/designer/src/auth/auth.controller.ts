@@ -61,7 +61,11 @@ export class AuthController {
         const payload = this.authService.verifyJwt(dto.token);
         const user = await this.userService.verifyUser(payload['userId'], true);
         await this.userService.createInitialProfile(payload['userId'], payload['email']);
-        return user;
+        const token = this.authService.createJwt(user!);
+        
+        return {
+            token: token,
+        }
     }
 
     @Post('login')
@@ -84,7 +88,7 @@ export class AuthController {
            
         }
 
-        return new UnauthorizedException();
+        throw new UnauthorizedException();
     }
 
     @Post('reset-password')
