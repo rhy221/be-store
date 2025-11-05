@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Query, Req, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { AuthService } from './auth.service';
 import { MailService } from '../mail/mail.service';
@@ -84,7 +84,7 @@ export class AuthController {
            
         }
 
-        return {message: 'Wrong password or email'};
+        return new UnauthorizedException();
     }
 
     @Post('reset-password')
