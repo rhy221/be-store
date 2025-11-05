@@ -8,18 +8,7 @@ export class StorageService {
     private readonly storage: Storage;
 
     constructor() {
-        // this.storage = new Storage({
-        //     email: "ghuy9366@gmail.com",
-        //     password:"00024e824E58.",
-        //     userAgent:"be-store/1.0"
-        // }, error => {
-        //     if(error) {
-        //         console.error(error.message);
-        //     }
-        //     else {
-        //         console.log("login successful");
-        //     }
-        // });
+       
 
     }
 
