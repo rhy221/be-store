@@ -19,7 +19,7 @@ import { CloudinaryStorageModule } from './storage/cloudinary.module';
     DbModule,
     CloudinaryStorageModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, AnalyticsController],
   providers: [AppService],
 })
 export class AppModule {}
