@@ -5,6 +5,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Design, DesignSchema } from '@app/database/schemas/design.schema';
 import { Comment, CommentSchema } from '@app/database/schemas/comment.schema';
 import { Category, CategorySchema } from '@app/database/schemas/category.schema';
+import { StorageModule } from '@app/storage';
 
 @Module({
   imports: [MongooseModule.forFeature([
@@ -12,7 +13,8 @@ import { Category, CategorySchema } from '@app/database/schemas/category.schema'
     {name: Comment.name, schema: CommentSchema},
     {name: Category.name, schema: CategorySchema},
 
-  ])],
+  ]),
+  StorageModule],
   controllers: [ProductController],
   providers: [ProductService]
 })

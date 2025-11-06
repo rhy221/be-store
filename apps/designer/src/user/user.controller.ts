@@ -3,11 +3,14 @@ import { UserService } from './user.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { DesignerProfileDto, DesignerProfileUpdatingDto } from './user.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { StorageService } from '@app/storage/storage.service';
 
 @Controller('users')
 export class UserController {
 
-    constructor(private readonly userService: UserService){}
+    constructor(private readonly userService: UserService,
+            private readonly storageService: StorageService
+    ){}
     
     @UseGuards(JwtGuard)
     @Get('profile')
@@ -39,6 +42,8 @@ export class UserController {
             console.log('file exist');
         else console.log('not')
         const userId = req.user.userId;
+        const result = await this.storageService.upload(file);
+        dto.avatarUrl = result.url;
         return await this.userService.updateUserProfile(userId, dto);
     }
 

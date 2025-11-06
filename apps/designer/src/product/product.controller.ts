@@ -3,10 +3,13 @@ import { ProductService } from './product.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { CreateDesignDto } from './product.dto';
+import { StorageService } from '@app/storage/storage.service';
 
 @Controller('products')
 export class ProductController {
-    constructor(private readonly productService: ProductService){}
+    constructor(private readonly productService: ProductService,
+                private readonly storageService: StorageService
+    ){}
 
     @UseGuards(JwtGuard)
     @Get()
@@ -40,14 +43,14 @@ export class ProductController {
         if(files.model)
             console.log("model")
         const designerId = req.user.userId
+        const res = await this.storageService.upload(files.images?.[0]!, { folder: 'my_app_images' });
+        console.log("upload");
         return await this.productService.create(
             body, 
             designerId, 
-            ["https://picsum.photos/800/600", "https://picsum.photos/800/600", "https://picsum.photos/800/600"],
+            [res.url ?? "https://picsum.photos/800/600"],
         "https://picsum.photos/800/600");
-        return {
-            message: "success"
-        }
+        
 
     }
 
