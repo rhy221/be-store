@@ -1,9 +1,10 @@
-import { Controller, Get, Param, Post, Res, UploadedFile, UseInterceptors, Delete, HttpCode } from "@nestjs/common";
+import { Controller, Get, Param, Post, Res, UploadedFile, UseInterceptors, Delete, HttpCode, UploadedFiles, Body } from "@nestjs/common";
 import type { Response } from "express";
-import { FileInterceptor } from "@nestjs/platform-express";
+import { FileInterceptor, FilesInterceptor } from "@nestjs/platform-express";
 import { memoryStorage } from "multer";
 import { imageFileFilter } from "./file-filter";
 import { StorageService } from "./storage.service";
+import { DeleteImagesDto, DeleteManyResponse } from "./image-multi.dto";
 
 @Controller('images')
 export class ImagesController {
@@ -20,6 +21,18 @@ export class ImagesController {
     return result;
   }
 
+  @Post('uploads')
+  @UseInterceptors(FilesInterceptor('files', 10, {
+    storage: memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // per-file limit
+    fileFilter: imageFileFilter,
+  }))
+  async uploadMany(@UploadedFiles() files: Express.Multer.File[]) {
+    // returns { results, errors }
+    const res = await this.storage.uploadMany(files, { folder: 'my_app_images', concurrency: 3 });
+    return res;
+  }
+
   @Get(':publicId')
   async serve(@Param('publicId') publicId: string, @Res() res: Response) {
     const url = this.storage.getUrl(publicId, { transformation: { width: 800, crop: 'limit' } });
@@ -34,5 +47,12 @@ export class ImagesController {
     await this.storage.delete(publicId);
     // 204 No Content
     return;
+  }
+
+  @Delete()
+  async removeMany(@Body() dto: DeleteImagesDto): Promise<DeleteManyResponse> {
+    const ids = dto?.publicIds || [];
+    const summary = await this.storage.deleteMany(ids, { concurrency: 5 });
+    return summary;
   }
 }
