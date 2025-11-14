@@ -9,6 +9,7 @@ import { UserModule } from './user/user.module';
 import { MailModule } from './mail/mail.module';
 import { ProductModule } from './product/product.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { AuctionModule } from './auction/auction.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     MailModule,
     ProductModule,
     AnalyticsModule,
+    AuctionModule,
   ],
   controllers: [DesignerController],
   providers: [DesignerService],
