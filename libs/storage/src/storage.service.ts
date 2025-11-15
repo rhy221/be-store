@@ -5,6 +5,8 @@ import * as streamifier from 'streamifier';
 import { IStorageService, UploadResult } from './interfaces';
 import pLimit from 'p-limit';
 
+type ResourceType = 'image' | 'raw';
+
 @Injectable()
 export class StorageService implements IStorageService {
   private readonly uploadPreset?: string;
@@ -21,12 +23,16 @@ export class StorageService implements IStorageService {
       secure: true,
     });
   }
+  // Generic resource helpers follow
 
-  async upload(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string }): Promise<UploadResult> {
+  async uploadFile(
+    file: Express.Multer.File,
+    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string },
+  ): Promise<UploadResult> {
     if (!file || !file.buffer) throw new BadRequestException('File is required');
 
     const params: any = {
-      resource_type: 'image',
+      resource_type: options?.resourceType ?? 'image',
     };
     if (options?.folder) params.folder = options.folder;
     if (options?.tags) params.tags = options.tags.join(',');
@@ -53,26 +59,53 @@ export class StorageService implements IStorageService {
     });
   }
 
-  async delete(key: string): Promise<void> {
-    if (!key) return;
-    await cloudinary.uploader.destroy(key, { invalidate: true });
+  // Backwards compatible image upload
+  async upload(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string }): Promise<UploadResult> {
+    return this.uploadFile(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
   }
 
-  getUrl(key: string, options?: { transformation?: any }): string {
+  // Upload 3D model / raw file
+  async upload3d(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string }): Promise<UploadResult> {
+    return this.uploadFile(file, { resourceType: 'raw', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
+  }
+
+  // Generic URL builder
+  getFileUrl(key: string, options?: { resourceType?: ResourceType; transformation?: any; asAttachment?: boolean }): string {
     if (!key) return '';
     try {
-      // cloudinary.url might be typed differently; this will work at runtime
       // @ts-ignore
-      return cloudinary.url(key, { secure: true, transformation: options?.transformation });
+      return cloudinary.url(key, {
+        resource_type: options?.resourceType ?? 'image',
+        secure: true,
+        transformation: options?.transformation,
+        ...(options?.asAttachment ? { flags: 'attachment' } : {}),
+      });
     } catch {
       return '';
     }
   }
+
+  // Backwards compatible getUrl for images
+  getUrl(key: string, options?: { transformation?: any }): string {
+    return this.getFileUrl(key, { resourceType: 'image', transformation: options?.transformation });
+  }
+
+  // Generic delete that supports resource type
+  async deleteFile(key: string, resourceType: ResourceType = 'image'): Promise<void> {
+    if (!key) return;
+    await cloudinary.uploader.destroy(key, { resource_type: resourceType, invalidate: true });
+  }
+
+  // Backwards compatible delete for images
+  async delete(key: string): Promise<void> {
+    return this.deleteFile(key, 'image');
+  }
+
   async uploadMany(
     files: Express.Multer.File[],
-    options?: { folder?: string; tags?: string[]; publicIdPrefix?: string; concurrency?: number },
-  ): Promise<UploadResult[] | { results: UploadResult[]; errors: { index: number; error: any }[] }> {
-    if (!files || files.length === 0) return [];
+    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicIdPrefix?: string; concurrency?: number },
+  ): Promise<{ results: UploadResult[]; errors: { index: number; error: any }[] }> {
+    if (!files || files.length === 0) return { results: [], errors: [] };
 
     const concurrency = options?.concurrency ?? 3;
     const limit = pLimit(concurrency);
@@ -80,8 +113,13 @@ export class StorageService implements IStorageService {
     const tasks = files.map((file, idx) =>
       limit(async () => {
         try {
-          const uploadOpts = { folder: options?.folder, tags: options?.tags, publicId: options?.publicIdPrefix ? `${options.publicIdPrefix}-${idx}` : undefined };
-          const res = await this.upload(file, uploadOpts);
+          const uploadOpts = {
+            resourceType: options?.resourceType ?? 'image',
+            folder: options?.folder,
+            tags: options?.tags,
+            publicId: options?.publicIdPrefix ? `${options.publicIdPrefix}-${idx}` : undefined,
+          };
+          const res = await this.uploadFile(file, uploadOpts);
           return { status: 'fulfilled', value: res } as const;
         } catch (err) {
           return { status: 'rejected', reason: err } as const;
@@ -105,7 +143,7 @@ export class StorageService implements IStorageService {
   /**
    * Delete multiple public IDs. Returns summary of deleted and failed.
    */
-  async deleteMany(keys: string[], options?: { concurrency?: number }): Promise<{ deleted: string[]; failed: { id: string; error: string }[] }> {
+  async deleteMany(keys: string[], options?: { resourceType?: ResourceType; concurrency?: number }): Promise<{ deleted: string[]; failed: { id: string; error: string }[] }> {
     if (!Array.isArray(keys) || keys.length === 0) return { deleted: [], failed: [] };
 
     const concurrency = options?.concurrency ?? 5;
@@ -114,7 +152,7 @@ export class StorageService implements IStorageService {
     const tasks = keys.map((key) =>
       limit(async () => {
         try {
-          await this.delete(key);
+          await this.deleteFile(key, options?.resourceType ?? 'image');
           return { key, ok: true } as const;
         } catch (err) {
           return { key, ok: false, error: err } as const;
