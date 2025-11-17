@@ -71,6 +71,7 @@ export class AuctionGateway implements OnGatewayConnection, OnGatewayDisconnect 
 
   // Broadcast price update
   broadcastPriceUpdate(auctionId: string, price: number) {
+    console.log(price);
     this.server.to(`auction:${auctionId}`).emit('priceUpdate', { price });
   }
 }

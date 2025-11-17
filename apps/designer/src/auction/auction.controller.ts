@@ -7,18 +7,33 @@ import {
   Query,
   UseGuards,
   Request,
+  UploadedFiles,
 } from '@nestjs/common';
 import { AuctionService } from './auction.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
+import { CreateAuctionDto, PlaceBidDto } from './auction.dto';
+import { StorageService } from '@app/storage/storage.service';
 
 @Controller('auctions')
 export class AuctionController {
-  constructor(private readonly auctionService: AuctionService) {}
+  constructor(private readonly auctionService: AuctionService,
+     private readonly storageService: StorageService,
+  ) {}
 
   @Post()
  @UseGuards(JwtGuard)
-  async createAuction(@Body() createDto: any, @Request() req: any) {
-    const sellerId = req.user?.userId || 'temp-seller-id'; // Get from auth
+  async createAuction(
+    @UploadedFiles() files: {
+            images?: Express.Multer.File[];
+            model?: Express.Multer.File;
+        }, 
+    @Body() createDto: CreateAuctionDto, 
+    @Request() req: any
+  ) {
+    
+    const sellerId = req.user?.userId || 'temp-seller-id';
+    const res = await this.storageService.upload(files.images?.[0]!, { folder: 'my_app_images' });
+ // Get from auth
     return this.auctionService.createAuction(createDto, sellerId);
   }
 
@@ -41,7 +56,7 @@ export class AuctionController {
  @UseGuards(JwtGuard)
   async placeBid(
     @Param('id') auctionId: string,
-    @Body() body: { amount: number },
+    @Body() body: PlaceBidDto,
     @Request() req: any,
   ) {
     const bidderId = req.user?.userId || 'temp-bidder-id'; // Get from auth
@@ -50,7 +65,9 @@ export class AuctionController {
 
   @Get(':id/bids')
   async getBidHistory(@Param('id') auctionId: string) {
-    return this.auctionService.getBidHistory(auctionId);
+    const bids = await this.auctionService.getBidHistory(auctionId);
+    console.log(bids.length);
+    return bids;
   }
 
   @Get('user/bids')

@@ -23,10 +23,10 @@ export class Auction extends Document {
   @Prop({ default: 0 })
   bidIncrement: number;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId})
   sellerId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' })
+  @Prop({ type: Types.ObjectId })
   currentWinnerId: Types.ObjectId;
 
   @Prop({ required: true })

@@ -13,10 +13,12 @@ export class CreateAuctionDto {
   images?: string[];
 
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   startingPrice: number;
 
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   @IsOptional()
   bidIncrement?: number;
@@ -32,7 +34,9 @@ export class CreateAuctionDto {
 
 
 export class PlaceBidDto {
+  
   @IsNumber()
+  @Type(() => Number)
   @Min(0)
   amount: number;
 }

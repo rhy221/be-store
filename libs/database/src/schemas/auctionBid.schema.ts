@@ -9,7 +9,7 @@ export class AuctionBid extends Document {
   @Prop({ type: Types.ObjectId, ref: 'Auction', required: true })
   auctionId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId, required: true })
   bidderId: Types.ObjectId;
 
   @Prop({ required: true })
@@ -23,3 +23,10 @@ export class AuctionBid extends Document {
 }
 
 export const AuctionBidSchema = SchemaFactory.createForClass(AuctionBid);
+
+AuctionBidSchema.virtual('bidderProfile', {
+  ref: 'DesignerProfile',
+  localField: 'bidderId',
+  foreignField: 'userId',
+  justOne: true,
+});

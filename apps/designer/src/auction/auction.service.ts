@@ -4,12 +4,17 @@ import { Model, Types } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { Auction } from '@app/database/schemas/auction.schema';
 import { AuctionBid } from '@app/database/schemas/auctionBid.schema';
+import { DesignerProfile } from '@app/database/schemas/designerProfile.shema';
+import { AuctionGateway } from './auction.gateway';
+import { Design } from '@app/database/schemas/design.schema';
 
 @Injectable()
 export class AuctionService {
   constructor(
     @InjectModel(Auction.name) private readonly auctionModel: Model<Auction>,
     @InjectModel(AuctionBid.name) private readonly bidModel: Model<AuctionBid>,
+    @InjectModel(Design.name) private readonly designModel: Model<Design>,
+    private readonly auctionGateway: AuctionGateway,
   ) {}
 
   async createAuction(createDto: any, sellerId: string): Promise<Auction> {
@@ -24,7 +29,7 @@ export class AuctionService {
     return auction.save();
   }
 
-  async getAuctions(filters: any): Promise<Auction[]> {
+  async getAuctions(filters: any): Promise<Design[]> {
     const query: any = {};
     
     if (filters.status) {
@@ -35,15 +40,23 @@ export class AuctionService {
       query['metadata.category'] = filters.category;
     }
 
-    return this.auctionModel
-      .find(query)
-      .sort({ createdAt: -1 })
-      .limit(filters.limit || 20)
-      .exec();
+      query.type = "auction"
+    
+    return this.designModel
+          .find(query)
+          .sort({ createdAt : -1})
+          .limit(filters.limit || 20)
+          .exec();
+      
+    // return this.auctionModel
+    //   .find(query)
+    //   .sort({ createdAt: -1 })
+    //   .limit(filters.limit || 20)
+    //   .exec();
   }
 
-  async getAuctionById(id: string): Promise<Auction> {
-    const auction = await this.auctionModel.findById(id).exec();
+  async getAuctionById(id: string): Promise<Design> {
+    const auction = await this.designModel.findById(id).exec();
     if (!auction) {
       throw new NotFoundException('Auction not found');
     }
@@ -58,7 +71,7 @@ export class AuctionService {
   }
 
   async placeBid(auctionId: string, bidderId: string, amount: number): Promise<AuctionBid> {
-    const auction = await this.auctionModel.findById(auctionId);
+    const auction = await this.designModel.findById(auctionId);
     
     if (!auction) {
       throw new NotFoundException('Auction not found');
@@ -72,7 +85,7 @@ export class AuctionService {
       throw new BadRequestException('Auction has ended');
     }
 
-    if (auction.sellerId.toString() === bidderId) {
+    if (auction.designerId.toString() === bidderId) {
       throw new BadRequestException('Seller cannot bid on their own auction');
     }
 
@@ -98,7 +111,7 @@ export class AuctionService {
     await bid.save();
 
     // Update auction
-    await this.auctionModel.updateOne(
+    await this.designModel.updateOne(
       { _id: auctionId },
       {
         $set: {
@@ -109,16 +122,36 @@ export class AuctionService {
       }
     );
 
+    this.auctionGateway.broadcastNewBid(auctionId, bid);
+    this.auctionGateway.broadcastPriceUpdate(auctionId, amount)
     return bid;
   }
 
   async getBidHistory(auctionId: string): Promise<AuctionBid[]> {
-    return this.bidModel
-      .find({ auctionId })
-      .sort({ createdAt: -1 })
-      .populate('bidderId', 'username email')
-      .limit(50)
-      .exec();
+    return this.bidModel.aggregate([
+  { $match: { auctionId: new Types.ObjectId(auctionId) } }, // lọc theo auctionId
+  { $sort: { createdAt: -1 } },
+  { $limit: 50 },
+  {
+    $lookup: {
+      from: 'designerProfiles',      // tên collection trong DB
+      localField: 'bidderId',        // field trong AuctionBid
+      foreignField: 'userId',        // field trong DesignerProfile
+      as: 'bidderProfile'            // kết quả join sẽ nằm ở field này
+    }
+  },
+  { $unwind: '$bidderProfile' },     // convert array thành object (1:1)
+  { $project: {
+      amount: 1,
+      isAutoBid: 1,
+      createdAt: 1,
+      bidderProfile: { 
+        name: 1,
+        userId: 1 
+      }    // chỉ lấy name của bidder
+    }
+  }
+]);
   }
 
   @Cron(CronExpression.EVERY_MINUTE)
@@ -126,7 +159,7 @@ export class AuctionService {
     const now = new Date();
 
     // Start upcoming auctions
-    await this.auctionModel.updateMany(
+    await this.designModel.updateMany(
       {
         status: 'upcoming',
         startTime: { $lte: now },
@@ -135,7 +168,7 @@ export class AuctionService {
     );
 
     // End active auctions
-    await this.auctionModel.updateMany(
+    await this.designModel.updateMany(
       {
         status: 'active',
         endTime: { $lte: now },
@@ -144,8 +177,8 @@ export class AuctionService {
     );
   }
 
-  async getActiveAuctions(): Promise<Auction[]> {
-    return this.auctionModel
+  async getActiveAuctions(): Promise<Design[]> {
+    return this.designModel
       .find({ status: 'active' })
       .sort({ endTime: 1 })
       .exec();

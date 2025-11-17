@@ -1,7 +1,7 @@
 import { Design } from '@app/database/schemas/design.schema';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateDesignDto, DesignDto } from './product.dto';
 import {  Comment } from '@app/database/schemas/comment.schema';
 import { Category } from '@app/database/schemas/category.schema';
@@ -14,8 +14,25 @@ export class ProductService {
                 @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
 ){}
     
-    async create(dto: CreateDesignDto, designerId: string, imagesUrl: string[], fileUrl: string) {
-        return await this.designModel.create({...dto, designerId, imagesUrl, fileUrl, viewCount: 0, likeCount: 0, state: 'approved'})
+    async create(dto: CreateDesignDto, designerId: string, imageUrls: string[], modelUrls: string[]) {
+        
+        const design: any = {...dto, 
+            designerId: new Types.ObjectId(designerId), 
+            imageUrls, 
+            modelUrls,
+            viewCount: 0, 
+            likeCount: 0, 
+            state: 'approved'}
+        if(dto.type === "auction")
+        {
+            design.currentPrice = dto.startingPrice || 0;
+            design.status = new Date(dto.startTime || "") > new Date() 
+            ? 'upcoming' 
+            : 'active'
+        }
+            
+
+        return this.designModel.create(design);
     }
 
     async get(designerId: string) {

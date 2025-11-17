@@ -27,21 +27,21 @@ export class ProductController {
     @UseGuards(JwtGuard)
     @UseInterceptors(FileFieldsInterceptor([
     { name: 'images' },
-    { name: 'model', maxCount: 1 },
+    { name: 'models', maxCount: 1 },
     ]))
     @Post('create') 
     async create(
     @UploadedFiles() files: {
         images?: Express.Multer.File[];
-        model?: Express.Multer.File;
+        models?: Express.Multer.File[];
     }, 
     @Body() body: CreateDesignDto,
     @Req() req 
     ) {
         if(files.images)
             console.log(files.images.length)
-        if(files.model)
-            console.log("model")
+        if(files.models)
+            console.log(files.models.length)
         const designerId = req.user.userId
         const res = await this.storageService.upload(files.images?.[0]!, { folder: 'my_app_images' });
         console.log("upload");
@@ -49,7 +49,7 @@ export class ProductController {
             body, 
             designerId, 
             [res.url ?? "https://picsum.photos/800/600"],
-        "https://picsum.photos/800/600");
+        []);
         
 
     }
