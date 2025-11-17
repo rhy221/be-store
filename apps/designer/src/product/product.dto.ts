@@ -1,5 +1,6 @@
+import type { DesignType } from "@app/database/schemas/design.schema";
 import { Type } from "class-transformer";
-import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from "class-validator";
+import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class DesignDto {
 
@@ -11,27 +12,54 @@ export class DesignDto {
     title: string;
 
     @IsString()
-    description;
+    description: string;
+
+    // @IsString()
+    // @IsNotEmpty()
+    // imageUrl: string;
+
+    // @IsString()
+    // @IsNotEmpty()
+    // fileUrl: string;
 
     @IsString()
-    @IsNotEmpty()
-    imageUrl: string;
-
-    @IsString()
-    @IsNotEmpty()
-    fileUrl: string;
-
-    @IsString()
-    categoryId:string;
+    @IsOptional()
+    categoryId?:string;
 
     @IsArray()
-    tags: string[];
+    @IsOptional()
+    tags?: string[];
 
-    @IsNumber()
-    price: number;
 
     @IsString()
-    type: string;
+    type: DesignType;
+
+    
+    @IsNumber()
+    @IsOptional()
+    price?: number;
+
+    @IsNumber()
+    @Type(() => Number)
+    @Min(0)
+    @IsOptional()
+    startingPrice?: number;
+
+    @IsNumber()
+    @Type(() => Number)
+    @Min(0)
+    @IsOptional()
+    bidIncrement?: number;
+
+    @IsDate()
+    @Type(() => Date)
+    @IsOptional()
+    startTime?: Date;
+
+    @IsDate()
+    @Type(() => Date)
+    @IsOptional()
+    endTime?: Date;
 
 }
 
@@ -43,18 +71,42 @@ export class CreateDesignDto {
     @IsString()
     description;
 
-    @IsString()
-    categoryId:string;
+     @IsString()
+    @IsOptional()
+    categoryId?:string;
 
     @IsArray()
     @IsOptional()
     tags?: string[];
 
-    @Type(() => Number)
-    @IsNumber()
-    price: number;
+   @IsString()
+    type: DesignType;
 
-    @IsString()
-    type: "fixed" | "auction";
+    
+    @IsNumber()
+    @IsOptional()
+    price?: number;
+
+    @IsNumber()
+    @Type(() => Number)
+    @Min(0)
+    @IsOptional()
+    startingPrice?: number;
+
+    @IsNumber()
+    @Type(() => Number)
+    @Min(0)
+    @IsOptional()
+    bidIncrement?: number;
+
+    @IsDate()
+    @Type(() => Date)
+    @IsOptional()
+    startTime?: Date;
+
+    @IsDate()
+    @Type(() => Date)
+    @IsOptional()
+    endTime?: Date;
 
 }
