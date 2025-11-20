@@ -1,6 +1,6 @@
 import type { DesignType } from "@app/database/schemas/design.schema";
 import { Type } from "class-transformer";
-import { IsArray, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
+import { IsArray, IsDate, isNotEmpty, IsNotEmpty, IsNumber, IsOptional, IsString, Min } from "class-validator";
 
 export class DesignDto {
 
@@ -71,7 +71,7 @@ export class CreateDesignDto {
     @IsString()
     description;
 
-     @IsString()
+    @IsString()
     @IsOptional()
     categoryId?:string;
 
@@ -109,4 +109,19 @@ export class CreateDesignDto {
     @IsOptional()
     endTime?: Date;
 
+}
+
+
+export class LikeDesignDto {
+
+    @IsString()
+    @IsNotEmpty()
+    designId: string;
+}
+
+export class FollowDesingerDto {
+    
+    @IsString()
+    @IsNotEmpty()
+    designerId: string;
 }

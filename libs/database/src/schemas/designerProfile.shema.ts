@@ -13,6 +13,9 @@ export class DesignerProfile extends Document {
     @Prop()
     name: string;
 
+    @Prop({unique: true})
+    email: string
+
     @Prop()
     avatarUrl: string;
 
@@ -24,6 +27,9 @@ export class DesignerProfile extends Document {
 
     @Prop()
     followerCount: number;
+
+    @Prop()
+    followingCount: number;
 
     @Prop()
     totalDesigns: number;

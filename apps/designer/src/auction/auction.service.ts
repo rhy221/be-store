@@ -161,6 +161,7 @@ export class AuctionService {
     // Start upcoming auctions
     await this.designModel.updateMany(
       {
+        type: "auction",
         status: 'upcoming',
         startTime: { $lte: now },
       },
@@ -170,6 +171,7 @@ export class AuctionService {
     // End active auctions
     await this.designModel.updateMany(
       {
+        type: "auction",
         status: 'active',
         endTime: { $lte: now },
       },

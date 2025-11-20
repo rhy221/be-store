@@ -10,6 +10,8 @@ import { MailModule } from './mail/mail.module';
 import { ProductModule } from './product/product.module';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { AuctionModule } from './auction/auction.module';
+import { CartModule } from './cart/cart.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { AuctionModule } from './auction/auction.module';
     ProductModule,
     AnalyticsModule,
     AuctionModule,
+    CartModule,
+    OrderModule,
   ],
   controllers: [DesignerController],
   providers: [DesignerService],

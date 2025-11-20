@@ -35,6 +35,7 @@ export class UserService {
       const created = new this.desingerProfileModel({
         userId: userid,
         name: `${email.split('@')[0] ?? ""}`,
+        email: email,
         bio: "",
         avatarUrl: "",
         status: 'active',

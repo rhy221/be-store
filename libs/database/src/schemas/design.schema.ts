@@ -77,3 +77,10 @@ export class Design extends Document {
 }
 
 export const DesignSchema = SchemaFactory.createForClass(Design);
+
+DesignSchema.virtual('designerProfile', {
+  ref: 'designerProfiles',           
+  localField: 'desingerId', 
+  foreignField: 'userId',      
+  justOne: true,             
+});

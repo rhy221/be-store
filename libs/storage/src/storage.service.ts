@@ -57,15 +57,60 @@ export class StorageService implements IStorageService {
 
       streamifier.createReadStream(file.buffer).pipe(uploadStream);
     });
+
   }
 
+  async uploadFileByPath(
+  file: Express.Multer.File,
+  options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string },
+): Promise<UploadResult> {
+  if (!file || !file.path) {
+    throw new BadRequestException('File path is required');
+  }
+
+  const params: any = {
+    resource_type: options?.resourceType ?? 'image',
+  };
+  if (options?.folder) params.folder = options.folder;
+  if (options?.tags) params.tags = options.tags.join(',');
+  if (options?.publicId) params.public_id = options.publicId;
+  if (this.uploadPreset) params.upload_preset = this.uploadPreset;
+
+  try {
+    const fixedPath = file.path.replace(/\\/g, "/");
+
+    const result = await cloudinary.uploader.upload(fixedPath, params);
+
+    return {
+      key: result.public_id,
+      url: result.secure_url,
+      width: result.width,
+      height: result.height,
+      format: result.format,
+      bytes: result.bytes,
+      raw: result,
+    };
+  } catch (err) {
+    throw err;
+  }
+}
+
+
   // Backwards compatible image upload
-  async upload(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string }): Promise<UploadResult> {
+  async upload(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string; byPath?: boolean }): Promise<UploadResult> {
+    
+    if(options && options.byPath) 
+          return this.uploadFileByPath(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
+
     return this.uploadFile(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
   }
 
   // Upload 3D model / raw file
-  async upload3d(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string }): Promise<UploadResult> {
+  async upload3d(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string; byPath?: boolean }): Promise<UploadResult> {
+    
+    if(options && options.byPath)
+          return this.uploadFileByPath(file, { resourceType: 'raw', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
+
     return this.uploadFile(file, { resourceType: 'raw', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
   }
 
@@ -103,7 +148,7 @@ export class StorageService implements IStorageService {
 
   async uploadMany(
     files: Express.Multer.File[],
-    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicIdPrefix?: string; concurrency?: number },
+    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicIdPrefix?: string; concurrency?: number; byPath?: boolean},
   ): Promise<{ results: UploadResult[]; errors: { index: number; error: any }[] }> {
     if (!files || files.length === 0) return { results: [], errors: [] };
 
@@ -119,7 +164,10 @@ export class StorageService implements IStorageService {
             tags: options?.tags,
             publicId: options?.publicIdPrefix ? `${options.publicIdPrefix}-${idx}` : undefined,
           };
-          const res = await this.uploadFile(file, uploadOpts);
+          let res;
+          if(options && options.byPath)
+            res = await this.uploadFileByPath(file, uploadOpts);
+           res = await this.uploadFile(file, uploadOpts);
           return { status: 'fulfilled', value: res } as const;
         } catch (err) {
           return { status: 'rejected', reason: err } as const;
