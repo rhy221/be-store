@@ -12,6 +12,10 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AuctionModule } from './auction/auction.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { PurchaseModule } from './purchase/purchase.module';
+import { CollectionModule } from './collection/collection.module';
+import { RatingModule } from './rating/rating.module';
+import { CommentModule } from './comment/comment.module';
 
 @Module({
   imports: [
@@ -24,6 +28,10 @@ import { OrderModule } from './order/order.module';
     AuctionModule,
     CartModule,
     OrderModule,
+    PurchaseModule,
+    CollectionModule,
+    RatingModule,
+    CommentModule,
   ],
   controllers: [DesignerController],
   providers: [DesignerService],

@@ -1,8 +1,8 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query, Req, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { CreateDesignDto, FollowDesingerDto, LikeDesignDto } from './product.dto';
+import { CreateCollectionDto, CreateDesignDto, FollowDesingerDto, LikeDesignDto, ProductQueryDto, UpdateCollectionDto, UpdateProductDto } from './product.dto';
 import { StorageService } from '@app/storage/storage.service';
 import { diskStorage, memoryStorage } from 'multer';
 import { extname, join } from 'path';
@@ -26,7 +26,7 @@ export class ProductController {
     @UseGuards(OptionalJwtGuard)
     @Get('detail/:id') 
     async get(@Param('id') id: string, @Req() req) {
-        const userId = req?.user.userId;
+        const userId = req?.user?.userId;
         console.log(userId);
         return await this.productService.getOneById(id, userId);
     }
@@ -111,8 +111,15 @@ export class ProductController {
             designerId, 
             [...imgsres.results.map((res) => res.url!)],
             // [...modelsRes.results.map((res) => res.url!)],
-            [modelsRes.url!],
-            modelsRes.url!
+            [
+              {
+                publicId: modelsRes.key,
+                format: modelsRes.format || "",
+                size: modelsRes.bytes || 0,
+              }
+            ],
+            ""
+            // modelsRes.url!
             // displayModelRes.url!
             // [],
             // ""
@@ -166,5 +173,93 @@ export class ProductController {
       return this.productService.getFollowedDesigners(req.user.userId);
     }
 
+    @Get()
+  async getProducts(@Query() query: ProductQueryDto, @Req() req) {
+    const userId = req.user?.userId;
+    return this.productService.getProducts(query, userId);
+  }
+
+  @Get('my-products')
+  @UseGuards(JwtGuard)
+  async getMyProducts(@Query() query: ProductQueryDto, @Req() req) {
+    return this.productService.getMyProducts(req.user.userId, query);
+  }
+
+//   @Get(':id')
+//   async getProductById(@Param('id') id: string, @Request() req) {
+//     const userId = req.user?.userId;
+//     return this.productService.getProductById(id, userId);
+//   }
+
+//   @Post()
+//   @UseGuards(JwtAuthGuard)
+//   async createProduct(@Request() req, @Body() createProductDto: CreateProductDto) {
+//     return this.productService.createProduct(req.user.userId, createProductDto);
+//   }
+
+  @Put(':id')
+  @UseGuards(JwtGuard)
+  async updateProduct(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateProductDto: UpdateProductDto
+  ) {
+    return this.productService.updateProduct(req.user.userId, id, updateProductDto);
+  }
+
+   @Post(':id/collections/add')
+  @UseGuards(JwtGuard)
+  async addToCollections(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: { collectionIds: string[] }
+  ) {
+    // return this.productService.addToCollections(req.user.userId, id, body.collectionIds);
+  }
+
+  @Post(':id/collections/remove')
+  @UseGuards(JwtGuard)
+  async removeFromCollections(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() body: { collectionIds: string[] }
+  ) {
+    // return this.productService.removeFromCollections(req.user.userId, id, body.collectionIds);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtGuard)
+  async deleteProduct(@Req() req, @Param('id') id: string) {
+    return this.productService.deleteProduct(req.user.userId, id);
+  }
+
+  @Get('my-collections')
+  async getMyCollections(@Req() req) {
+    return this.productService.getMyCollections(req.user.userId);
+  }
+
+  @Get('colletions/:id')
+  async getCollectionById(@Param('id') id: string) {
+    return this.productService.getCollectionById(id);
+  }
+
+  @Post('collections')
+  async createCollection(@Req() req, @Body() createCollectionDto: CreateCollectionDto) {
+    return this.productService.createCollection(req.user.userId, createCollectionDto);
+  }
+
+  @Put('collections/:id')
+  async updateCollection(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateCollectionDto: UpdateCollectionDto
+  ) {
+    return this.productService.updateCollection(req.user.userId, id, updateCollectionDto);
+  }
+
+  @Delete('collections/:id')
+  async deleteCollection(@Req() req, @Param('id') id: string) {
+    return this.productService.deleteCollection(req.user.userId, id);
+  }
    
 }

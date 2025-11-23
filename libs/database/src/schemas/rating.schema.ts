@@ -2,21 +2,19 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
-export class Comment extends Document {
+export class Rating extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
   productId: Types.ObjectId;
 
-  @Prop({ required: true })
-  content: string;
+  @Prop({ required: true, min: 1, max: 5 })
+  rating: number;
 
-  @Prop({ type: Types.ObjectId, ref: 'Comment' })
-  parentId?: Types.ObjectId;
-
-  @Prop({ default: false })
-  isEdited: boolean;
+  @Prop()
+  review: string;
 }
 
-export const CommentSchema = SchemaFactory.createForClass(Comment);
+export const RatingSchema = SchemaFactory.createForClass(Rating);
+RatingSchema.index({ userId: 1, productId: 1 }, { unique: true });

@@ -4,6 +4,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import * as streamifier from 'streamifier';
 import { IStorageService, UploadResult } from './interfaces';
 import pLimit from 'p-limit';
+import path from 'path';
 
 type ResourceType = 'image' | 'raw';
 
@@ -25,30 +26,91 @@ export class StorageService implements IStorageService {
   }
   // Generic resource helpers follow
 
-  async uploadFile(
+  // async uploadFile(
+  //   file: Express.Multer.File,
+  //   options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string },
+  // ): Promise<UploadResult> {
+  //   if (!file || !file.buffer) throw new BadRequestException('File is required');
+
+  //   const params: any = {
+  //     resource_type: options?.resourceType ?? 'image',
+  //   };
+  //   if (options?.folder) params.folder = options.folder;
+  //   if (options?.tags) params.tags = options.tags.join(',');
+  //   if (options?.publicId) params.public_id = options.publicId;
+  //   if (this.uploadPreset) params.upload_preset = this.uploadPreset;
+
+  //   return new Promise<UploadResult>((resolve, reject) => {
+  //     const uploadStream = cloudinary.uploader.upload_stream(params, (error, result) => {
+  //       if (error) return reject(error);
+  //       if (!result) return reject(new Error('No result from Cloudinary'));
+  //       const res: UploadResult = {
+  //         key: result.public_id,
+  //         url: result.secure_url,
+  //         width: result.width,
+  //         height: result.height,
+  //         format: result.format,
+  //         bytes: result.bytes,
+  //         raw: result,
+  //       };
+  //       resolve(res);
+  //     });
+
+  //     streamifier.createReadStream(file.buffer).pipe(uploadStream);
+  //   });
+
+  // }
+
+  // file-upload.service.ts
+async uploadFile(
     file: Express.Multer.File,
-    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string },
+    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string; isPrivate?: boolean }, // Thêm isPrivate
   ): Promise<UploadResult> {
     if (!file || !file.buffer) throw new BadRequestException('File is required');
 
     const params: any = {
       resource_type: options?.resourceType ?? 'image',
+      type: options?.isPrivate ? 'private' : 'upload', 
     };
+
+    const extName = path.extname(file.originalname).toLowerCase(); // .glb
+    const format = extName.replace('.', '');
+
     if (options?.folder) params.folder = options.folder;
     if (options?.tags) params.tags = options.tags.join(',');
-    if (options?.publicId) params.public_id = options.publicId;
+    // if (options?.publicId) params.public_id = options.publicId;
+    if (options?.publicId) {
+      if (params.resource_type === 'raw' || params.resource_type === 'auto') {
+         // Nếu user truyền publicId mà chưa có đuôi, ta tự nối đuôi vào
+         if (!options.publicId.toLowerCase().endsWith(extName)) {
+            params.public_id = `${options.publicId}${extName}`;
+         } else {
+            params.public_id = options.publicId;
+         }
+      } else {
+         params.public_id = options.publicId;
+      }
+    } else {
+       // Nếu không có publicId tùy chọn, Cloudinary sẽ sinh random.
+       // Với file raw, để giữ đuôi file, ta nên dùng use_filename
+       if (params.resource_type === 'raw') {
+          params.use_filename = true;
+          params.unique_filename = true; // Giữ tên gốc + random string để tránh trùng
+       }
+    }
     if (this.uploadPreset) params.upload_preset = this.uploadPreset;
 
     return new Promise<UploadResult>((resolve, reject) => {
       const uploadStream = cloudinary.uploader.upload_stream(params, (error, result) => {
         if (error) return reject(error);
         if (!result) return reject(new Error('No result from Cloudinary'));
+        
         const res: UploadResult = {
           key: result.public_id,
-          url: result.secure_url,
+          url: result.secure_url, // URL này sẽ không chạy được nếu type='private' (trả về 401/404)
           width: result.width,
           height: result.height,
-          format: result.format,
+          format: result.format || format,
           bytes: result.bytes,
           raw: result,
         };
@@ -57,8 +119,7 @@ export class StorageService implements IStorageService {
 
       streamifier.createReadStream(file.buffer).pipe(uploadStream);
     });
-
-  }
+}
 
   async uploadFileByPath(
   file: Express.Multer.File,
@@ -100,9 +161,9 @@ export class StorageService implements IStorageService {
   async upload(file: Express.Multer.File, options?: { folder?: string; tags?: string[]; publicId?: string; byPath?: boolean }): Promise<UploadResult> {
     
     if(options && options.byPath) 
-          return this.uploadFileByPath(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
+          return this.uploadFileByPath(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId, });
 
-    return this.uploadFile(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
+    return this.uploadFile(file, { resourceType: 'image', folder: options?.folder, tags: options?.tags, publicId: options?.publicId, isPrivate: false });
   }
 
   // Upload 3D model / raw file
@@ -111,7 +172,7 @@ export class StorageService implements IStorageService {
     if(options && options.byPath)
           return this.uploadFileByPath(file, { resourceType: 'raw', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
 
-    return this.uploadFile(file, { resourceType: 'raw', folder: options?.folder, tags: options?.tags, publicId: options?.publicId });
+    return this.uploadFile(file, { resourceType: 'raw', folder: options?.folder, tags: options?.tags, publicId: options?.publicId, isPrivate: true });
   }
 
   // Generic URL builder
@@ -220,6 +281,29 @@ export class StorageService implements IStorageService {
 
     return { deleted, failed };
   }
+
+ // file-upload.service.ts
+generateSignedUrl(publicId: string, format: string, resourceType: string = 'image'): string {
+    const options: any = {
+      resource_type: resourceType,
+      type: 'private',
+      sign_url: true,
+      expires_at: Math.round(Date.now() / 1000) + 3600,
+    };
+
+    // QUAN TRỌNG:
+    // Nếu là 'raw', KHÔNG ĐƯỢC DÙNG flags hay format. 
+    // Cloudinary raw url rất nhạy cảm, chỉ chấp nhận đường dẫn gốc.
+    if (resourceType !== 'raw') {
+        const fileNameOnly = publicId.split('/').pop();
+        options.format = format;
+        options.flags = `attachment:${fileNameOnly}.${format}`;
+    }
+    // Với raw, options chỉ có: resource_type, type, sign_url, expires_at
+
+    return cloudinary.url(publicId, options);
 }
+}
+
 
 

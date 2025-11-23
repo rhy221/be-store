@@ -10,6 +10,9 @@ import { ConvertModule } from '@app/convert';
 import { DesignerProfile, DesignerProfileSchema } from '@app/database/schemas/designerProfile.shema';
 import { Like, LikeSchema } from '@app/database/schemas/like.schema';
 import { Following, FollowingSchema } from '@app/database/schemas/following.schema';
+import { Purchase, PurchaseSchema } from '@app/database/schemas/purchase.schema';
+import { Collection, CollectionSchema } from '@app/database/schemas/collection.schema';
+import { ProductView, ProductViewSchema } from '@app/database/schemas/product-view.schema';
 
 @Module({
   imports: [MongooseModule.forFeature([
@@ -19,6 +22,9 @@ import { Following, FollowingSchema } from '@app/database/schemas/following.sche
     {name: Category.name, schema: CategorySchema},
     {name: Like.name, schema: LikeSchema},
     {name: Following.name, schema: FollowingSchema},
+    {name: Collection.name, schema: CollectionSchema},
+    {name: Purchase.name, schema: PurchaseSchema},
+    {name: ProductView.name, schema: ProductViewSchema},
 
   ]),
   StorageModule,
