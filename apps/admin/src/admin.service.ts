@@ -1,113 +1,98 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { User, Template, Category, Report } from './schemas/schemas';
+import { Model, Types } from 'mongoose';
+import { User, Category, Report } from './schemas/schemas';
 
 @Injectable()
 export class AdminService {
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
-    @InjectModel(Template.name) private templateModel: Model<Template>,
     @InjectModel(Category.name) private categoryModel: Model<Category>,
     @InjectModel(Report.name) private reportModel: Model<Report>,
   ) {}
 
+  /* ================= DASHBOARD ================= */
+
   async getDashboardStats() {
     const totalUsers = await this.userModel.countDocuments();
-    const totalTemplates = await this.templateModel.countDocuments();
     const totalCategories = await this.categoryModel.countDocuments();
+    const totalReports = await this.reportModel.countDocuments();
 
-    const topViewed = await this.templateModel
-      .find()
-      .sort({ views: -1 })
-      .limit(3);
-
-    const topRevenue = await this.templateModel
-      .find()
-      .sort({ revenue: -1 })
-      .limit(3);
-
-    return { totalUsers, totalTemplates, totalCategories, topViewed, topRevenue };
+    return {
+      totalUsers,
+      totalCategories,
+      totalReports,
+    };
   }
 
-  async getTemplatesPerWeek() {
-    return this.templateModel.aggregate([
-      {
-        $group: {
-          _id: { week: { $week: '$createdAt' } },
-          total: { $sum: 1 },
-        },
-      },
-      { $sort: { '_id.week': 1 } },
-    ]);
-  }
-
-  async getUsersDaily() {
-    return this.userModel.aggregate([
-      {
-        $group: {
-          _id: { day: { $dayOfMonth: '$createdAt' } },
-          total: { $sum: 1 },
-        },
-      },
-      { $sort: { '_id.day': 1 } },
-    ]);
-  }
-
-  async getReports(query: any) {
-    const filter: any = {};
-    if (query.type) filter.type = query.type;
-    if (query.username) filter.username = query.username;
-    return this.reportModel.find(filter);
-  }
-
-  async rejectReport(id: string) {
-    return this.reportModel.findByIdAndUpdate(id, { status: 'rejected' });
-  }
-
-  async warnUser(userId: string) {
-    return this.userModel.findByIdAndUpdate(userId, { warnings: 1 });
-  }
-
-  async blockUser(userId: string) {
-    return this.userModel.findByIdAndUpdate(userId, { status: 'blocked' });
-  }
+  /* ================= USERS ================= */
 
   async getUsers(query: any) {
     const filter: any = {};
-    if (query.name) filter.name = new RegExp(query.name, 'i');
-    if (query.status) filter.status = query.status;
+    if (query.name) {
+      filter.name = new RegExp(query.name, 'i');
+    }
 
     return this.userModel.find(filter);
   }
 
   async getUserDetail(id: string) {
-    return this.userModel.findById(id).populate('templates');
+    return this.userModel.findById(id);
   }
 
-  async blockUserAccount(id: string) {
-    return this.userModel.findByIdAndUpdate(id, { status: 'blocked' });
-  }
-
-  async unlockUser(id: string) {
-    return this.userModel.findByIdAndUpdate(id, { status: 'active' });
-  }
+  /* ================= CATEGORIES ================= */
 
   async getCategories(query: any) {
-    const filter: any = {};
-    if (query.name) filter.name = new RegExp(query.name, 'i');
-    return this.categoryModel.find(filter).populate('templates');
+    const filter: any = { isDeleted: false };
+
+    if (query.name) {
+      filter.name = new RegExp(query.name, 'i');
+    }
+
+    return this.categoryModel.find(filter);
   }
 
-  async createCategory(dto: any) {
-    return new this.categoryModel(dto).save();
+  async createCategory(dto: {
+    name: string;
+    slug: string;
+    styles: string[];
+  }) {
+    return new this.categoryModel({
+      ...dto,
+      isDeleted: false,
+    }).save();
   }
 
-  async updateCategory(id: string, dto: any) {
-    return this.categoryModel.findByIdAndUpdate(id, dto);
+  async updateCategory(id: string, dto: Partial<Category>) {
+    return this.categoryModel.findByIdAndUpdate(id, dto, { new: true });
   }
 
   async deleteCategory(id: string) {
-    return this.categoryModel.findByIdAndDelete(id);
+    return this.categoryModel.findByIdAndUpdate(
+      id,
+      { isDeleted: true },
+      { new: true },
+    );
+  }
+
+  /* ================= REPORTS ================= */
+
+  async getReports() {
+    return this.reportModel
+      .find()
+      .populate('createdBy', 'name email')
+      .populate('category', 'name slug');
+  }
+
+  async createReport(dto: {
+    content: string;
+    category: string;
+    createdBy: string;
+  }) {
+    return new this.reportModel({
+      content: dto.content,
+      category: new Types.ObjectId(dto.category),
+      createdBy: new Types.ObjectId(dto.createdBy),
+    }).save();
   }
 }

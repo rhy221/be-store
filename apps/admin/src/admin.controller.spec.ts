@@ -1,67 +1,78 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { MongooseModule } from '@nestjs/mongoose';
+import { ConfigModule } from '@nestjs/config';
+
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 
-describe('AdminController', () => {
+import {
+  User,
+  UserSchema,
+  Category,
+  CategorySchema,
+  Report,
+  ReportSchema,
+} from './schemas/schemas';
+
+describe('AdminController (Integration)', () => {
   let controller: AdminController;
-  let service: AdminService;
 
-  const mockService = {
-    getDashboardStats: jest.fn().mockResolvedValue({
-      totalUsers: 10,
-      totalTemplates: 5,
-      totalCategories: 3,
-      topViewed: [],
-      topRevenue: [],
-    }),
-    getTemplatesPerWeek: jest.fn().mockResolvedValue([]),
-    getUsersDaily: jest.fn().mockResolvedValue([]),
-    getReports: jest.fn().mockResolvedValue([]),
-    getUsers: jest.fn().mockResolvedValue([]),
-    getUserDetail: jest.fn().mockResolvedValue({}),
-    blockUserAccount: jest.fn().mockResolvedValue({}),
-    unlockUser: jest.fn().mockResolvedValue({}),
-    getCategories: jest.fn().mockResolvedValue([]),
-    createCategory: jest.fn().mockResolvedValue({}),
-    updateCategory: jest.fn().mockResolvedValue({}),
-    deleteCategory: jest.fn().mockResolvedValue({}),
-  };
-
-  beforeEach(async () => {
+  beforeAll(async () => {
     const module: TestingModule = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+        }),
+
+        MongooseModule.forRoot(process.env.MONGO_URI!),
+
+        MongooseModule.forFeature([
+          { name: User.name, schema: UserSchema },
+          { name: Category.name, schema: CategorySchema },
+          { name: Report.name, schema: ReportSchema },
+        ]),
+      ],
       controllers: [AdminController],
-      providers: [{ provide: AdminService, useValue: mockService }],
+      providers: [AdminService],
     }).compile();
 
     controller = module.get<AdminController>(AdminController);
-    service = module.get<AdminService>(AdminService);
   });
 
-  it('should be defined', () => {
+  it('controller should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it('getDashboardStats should return stats', async () => {
+  it('getDashboardStats returns data', async () => {
     const res = await controller.getDashboardStats();
-    expect(res).toEqual({
-      totalUsers: 10,
-      totalTemplates: 5,
-      totalCategories: 3,
-      topViewed: [],
-      topRevenue: [],
-    });
-    expect(service.getDashboardStats).toHaveBeenCalled();
+
+    expect(res).toHaveProperty('totalUsers');
+    expect(res).toHaveProperty('totalCategories');
+    expect(res).toHaveProperty('totalReports');
   });
 
-  it('getReports calls service', async () => {
-    const r = await controller.getReports({});
-    expect(r).toEqual([]);
-    expect(service.getReports).toHaveBeenCalled();
+  it('getCategories returns array', async () => {
+    const res = await controller.getCategories({});
+
+    expect(Array.isArray(res)).toBe(true);
   });
 
-  it('getUsers calls service', async () => {
-    const r = await controller.getUsers({});
-    expect(r).toEqual([]);
-    expect(service.getUsers).toHaveBeenCalled();
+  it('createCategory works', async () => {
+    const dto = {
+      name: 'Test Category',
+      slug: 'test-category',
+      styles: ['A', 'B'],
+    };
+
+    const created = await controller.createCategory(dto);
+
+    expect(created).toHaveProperty('_id');
+    expect(created.name).toBe(dto.name);
+  });
+
+  it('getReports returns array', async () => {
+    const res = await controller.getReports();
+
+    expect(Array.isArray(res)).toBe(true);
   });
 });

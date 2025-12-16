@@ -1,52 +1,83 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-@Schema({ timestamps: true })
+/* ===================== USER ===================== */
+
+@Schema({
+  timestamps: true,
+  versionKey: false,
+})
 export class User extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop()
+  @Prop({ required: true, unique: true })
   email: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-@Schema({ timestamps: true })
+UserSchema.set('toJSON', {
+  transform: (_doc, ret: any) => {
+    delete ret.createdAt;
+    delete ret.updatedAt;
+    return ret;
+  },
+});
+
+/* ===================== CATEGORY ===================== */
+
+@Schema({
+  timestamps: true,
+  versionKey: false,
+})
 export class Category extends Document {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ type: [{ type: Types.ObjectId, ref: 'Template' }] })
-  templates: Types.ObjectId[];
+  @Prop({ required: true, unique: true })
+  slug: string;
+
+  @Prop({ type: [String], default: [] })
+  styles: string[];
+
+  @Prop({ default: false })
+  isDeleted: boolean;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
 
-@Schema({ timestamps: true })
-export class Template extends Document {
-  @Prop({ required: true })
-  title: string;
+CategorySchema.set('toJSON', {
+  transform: (_doc, ret: any) => {
+    delete ret.createdAt;
+    delete ret.updatedAt;
+    return ret;
+  },
+});
 
-  @Prop()
-  description: string;
+/* ===================== REPORT ===================== */
 
-  @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
-  category: Types.ObjectId;
-}
-
-export const TemplateSchema = SchemaFactory.createForClass(Template);
-
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  versionKey: false,
+})
 export class Report extends Document {
   @Prop({ required: true })
   content: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'Template', required: true })
-  template: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
+  category: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   createdBy: Types.ObjectId;
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report);
+
+ReportSchema.set('toJSON', {
+  transform: (_doc, ret: any) => {
+    delete ret.createdAt;
+    delete ret.updatedAt;
+    return ret;
+  },
+});
