@@ -5,21 +5,26 @@ import { AdminService } from './admin.service';
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  @Get('stats')
+  @Get('quick-stats')
   getDashboardStats() {
     return this.adminService.getDashboardStats();
   }
 
-  @Get('stats/templates-week')
+  @Get('weekly-designs')
   getTemplatesPerWeek() {
     return this.adminService.getTemplatesPerWeek();
   }
 
-  @Get('stats/users-daily')
+  @Get('daily-access')
   getUsersDaily() {
     return this.adminService.getUsersDaily();
   }
 
+  @Get('rankings')
+  getRankings() {
+    return this.adminService.getDashboardStats(); 
+  }
+  
   @Get('reports')
   getReports(@Query() q: any) {
     return this.adminService.getReports(q);
@@ -38,6 +43,11 @@ export class AdminController {
   @Patch('reports/block/:userId')
   blockUser(@Param('userId') userId: string) {
     return this.adminService.blockUser(userId);
+  }
+  
+  @Get('unlock-requests')
+  getUnlockRequests() {
+    return []; 
   }
 
   @Get('users')

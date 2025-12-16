@@ -1,13 +1,22 @@
+import { ConfigModule } from '@nestjs/config';
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
+import { DatabaseModule } from '@app/database';
 
 import { User, UserSchema, Template, TemplateSchema, Category, CategorySchema, Report, ReportSchema } from './schemas/schemas';
 
 @Module({
   imports: [
-    MongooseModule.forRoot('mongodb://localhost:27017/be-store'),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+
+    DatabaseModule,
+
+    MongooseModule.forRoot(process.env.MONGO_URI!),
+
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Template.name, schema: TemplateSchema },
