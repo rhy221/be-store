@@ -1,83 +1,136 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose'
+import { Document, Types } from 'mongoose'
 
-/* ===================== USER ===================== */
-
-@Schema({
-  timestamps: true,
-  versionKey: false,
-})
+@Schema({ timestamps: true, versionKey: false })
 export class User extends Document {
   @Prop({ required: true })
-  name: string;
+  name: string
 
   @Prop({ required: true, unique: true })
-  email: string;
+  email: string
 }
 
-export const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(User)
 
 UserSchema.set('toJSON', {
   transform: (_doc, ret: any) => {
-    delete ret.createdAt;
-    delete ret.updatedAt;
-    return ret;
+    delete ret.createdAt
+    delete ret.updatedAt
+    return ret
   },
-});
-
-/* ===================== CATEGORY ===================== */
-
-@Schema({
-  timestamps: true,
-  versionKey: false,
 })
+
+@Schema({ timestamps: true, versionKey: false })
 export class Category extends Document {
   @Prop({ required: true })
-  name: string;
+  name: string
 
   @Prop({ required: true, unique: true })
-  slug: string;
+  slug: string
 
   @Prop({ type: [String], default: [] })
-  styles: string[];
+  styles: string[]
 
   @Prop({ default: false })
-  isDeleted: boolean;
+  isDeleted: boolean
 }
 
-export const CategorySchema = SchemaFactory.createForClass(Category);
+export const CategorySchema = SchemaFactory.createForClass(Category)
 
 CategorySchema.set('toJSON', {
   transform: (_doc, ret: any) => {
-    delete ret.createdAt;
-    delete ret.updatedAt;
-    return ret;
+    delete ret.createdAt
+    delete ret.updatedAt
+    return ret
   },
-});
-
-/* ===================== REPORT ===================== */
-
-@Schema({
-  timestamps: true,
-  versionKey: false,
 })
+
+@Schema({ timestamps: true, versionKey: false })
 export class Report extends Document {
   @Prop({ required: true })
-  content: string;
+  content: string
 
   @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
-  category: Types.ObjectId;
+  category: Types.ObjectId
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
-  createdBy: Types.ObjectId;
+  createdBy: Types.ObjectId
 }
 
-export const ReportSchema = SchemaFactory.createForClass(Report);
+export const ReportSchema = SchemaFactory.createForClass(Report)
 
 ReportSchema.set('toJSON', {
   transform: (_doc, ret: any) => {
-    delete ret.createdAt;
-    delete ret.updatedAt;
-    return ret;
+    delete ret.createdAt
+    delete ret.updatedAt
+    return ret
   },
-});
+})
+
+@Schema({ timestamps: true, versionKey: false, collection: 'designs' })
+export class Template extends Document {
+  @Prop({ required: true })
+  title: string
+
+  @Prop({ required: true })
+  type: string
+
+  @Prop({ default: 0 })
+  viewCount: number
+
+  @Prop({ default: false })
+  isDeleted: boolean
+
+  @Prop({ default: 'approved' })
+  state: string
+
+  @Prop({ type: Types.ObjectId, ref: 'Designer' })
+  designerId: Types.ObjectId
+}
+
+export const TemplateSchema = SchemaFactory.createForClass(Template)
+
+TemplateSchema.set('toJSON', {
+  transform: (_doc, ret: any) => {
+    delete ret.createdAt
+    delete ret.updatedAt
+    return ret
+  },
+})
+
+@Schema({ timestamps: true, versionKey: false, collection: 'designerProfiles' })
+export class Designer extends Document {
+  @Prop({ required: true })
+  name: string
+
+  @Prop({ required: true, unique: true })
+  email: string
+
+  @Prop({ default: 0 })
+  followerCount: number
+
+  @Prop({ default: 0 })
+  totalDesigns: number
+
+  @Prop({ default: 0 })
+  totalSold: number
+
+  @Prop({ default: 0 })
+  totalRevenue: number
+
+  @Prop({ default: 0 })
+  likeCount: number
+
+  @Prop({ default: 0 })
+  rating: number
+}
+
+export const DesignerSchema = SchemaFactory.createForClass(Designer)
+
+DesignerSchema.set('toJSON', {
+  transform: (_doc, ret: any) => {
+    delete ret.createdAt
+    delete ret.updatedAt
+    return ret
+  },
+})

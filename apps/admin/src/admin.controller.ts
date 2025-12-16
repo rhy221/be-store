@@ -1,26 +1,14 @@
-import {
-  Controller,
-  Get,
-  Query,
-  Param,
-  Post,
-  Body,
-  Patch,
-} from '@nestjs/common';
+import { Controller, Get, Query, Param, Post, Body, Patch } from '@nestjs/common';
 import { AdminService } from './admin.service';
 
 @Controller('admin')
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}
 
-  /* ================= DASHBOARD ================= */
-
   @Get('quick-stats')
   getDashboardStats() {
     return this.adminService.getDashboardStats();
   }
-
-  /* ================= USERS ================= */
 
   @Get('users')
   getUsers(@Query() q: any) {
@@ -32,22 +20,13 @@ export class AdminController {
     return this.adminService.getUserDetail(id);
   }
 
-  /* ================= CATEGORIES ================= */
-
   @Get('categories')
   getCategories(@Query() q: any) {
     return this.adminService.getCategories(q);
   }
 
   @Post('categories')
-  createCategory(
-    @Body()
-    dto: {
-      name: string;
-      slug: string;
-      styles: string[];
-    },
-  ) {
+  createCategory(@Body() dto: { name: string; slug: string; styles: string[] }) {
     return this.adminService.createCategory(dto);
   }
 
@@ -61,22 +40,38 @@ export class AdminController {
     return this.adminService.deleteCategory(id);
   }
 
-  /* ================= REPORTS ================= */
-
   @Get('reports')
   getReports() {
     return this.adminService.getReports();
   }
 
   @Post('reports')
-  createReport(
-    @Body()
-    dto: {
-      content: string;
-      category: string;
-      createdBy: string;
-    },
-  ) {
+  createReport(@Body() dto: { content: string; category: string; createdBy: string }) {
     return this.adminService.createReport(dto);
+  }
+
+  @Get('rankings')
+  getTopRankings() {
+    return this.adminService.getTopRankings();
+  }
+
+  @Get('templates')
+  async getTemplates() {
+    const templates = await this.adminService.getTopTemplates();
+    return templates.map(t => ({
+      title: t.title,
+      viewCount: t.viewCount,
+      icon: t.icon || 'shirt',
+    }));
+  }
+
+  @Get('designers')
+  async getDesigners() {
+    const designers = await this.adminService.getTopDesigners();
+    return designers.map(d => ({
+      name: d.name,
+      followerCount: d.followerCount,
+      icon: d.icon || 'user',
+    }));
   }
 }

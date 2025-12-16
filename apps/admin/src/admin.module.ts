@@ -13,6 +13,10 @@ import {
   CategorySchema,
   Report,
   ReportSchema,
+  Template,
+  TemplateSchema,
+  Designer,
+  DesignerSchema,
 } from './schemas/schemas';
 
 @Module({
@@ -20,15 +24,14 @@ import {
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-
     DatabaseModule,
-
     MongooseModule.forRoot(process.env.MONGO_URI!),
-
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: Category.name, schema: CategorySchema },
       { name: Report.name, schema: ReportSchema },
+      { name: Template.name, schema: TemplateSchema, collection: 'designs' },
+      { name: Designer.name, schema: DesignerSchema, collection: 'designerProfiles' },
     ]),
   ],
   controllers: [AdminController],
