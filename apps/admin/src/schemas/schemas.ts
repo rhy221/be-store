@@ -143,6 +143,8 @@ export class Template extends Document {
 
   createdAt: Date;
   updatedAt: Date;
+
+  
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(Template);

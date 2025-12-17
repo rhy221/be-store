@@ -42,24 +42,14 @@ export class AdminService {
   }
 
   async getUserDesigns(userId: string) {
-    const user = await this.userModel.findById(userId).lean();
-    if (!user) throw new NotFoundException('User not found');
+    const user = await this.userModel.findById(userId).lean()
+    if (!user) throw new NotFoundException('User not found')
 
-    if (!user.role.includes('designer')) return [];
+    if (!user.role.includes('designer')) return []
 
-    const designs = await this.templateModel
+    return this.templateModel
       .find({ designerId: user._id, isDeleted: false })
-      .select('title imageUrls status type currentPrice createdAt')
-      .lean();
-
-    return designs.map(d => ({
-      id: d._id.toString(),
-      name: d.title,
-      image: d.imageUrls?.[0] || '',
-      status: d.status || d.type || 'unknown',
-      currentPrice: d.currentPrice || 0,
-      createdAt: d.createdAt,
-    }));
+      .lean()
   }
 
 
