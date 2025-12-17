@@ -86,6 +86,9 @@ export class Template extends Document {
 
   @Prop({ type: Types.ObjectId, ref: 'Designer' })
   designerId: Types.ObjectId
+
+  @Prop({ type: Types.ObjectId, ref: 'Category', required: true })
+  categoryId: Types.ObjectId
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(Template)
