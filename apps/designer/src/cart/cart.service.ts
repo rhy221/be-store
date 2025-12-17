@@ -58,7 +58,7 @@ async getCart(userId: string) {
         let: { designerId: '$productDetails.designerId' },
         pipeline: [
           { $match: { $expr: { $eq: ['$userId', '$$designerId'] } } },
-          { $project: { _id: 0, name: 1, email: 1 } }
+          { $project: { _id: 0, name: 1, email: 1, userId: 1 } }
         ],
         as: 'designerInfo'
       }

@@ -32,13 +32,12 @@ export class DesignerProfileDto {
 export class DesignerProfileUpdatingDto {
 
     @IsString()
+    @IsOptional()
     name: string;
+
 
     @IsString()
     @IsOptional()
-    avatarUrl?: string;
-
-    @IsString()
     bio: string;
 
 }

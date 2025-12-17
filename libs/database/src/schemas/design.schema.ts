@@ -20,7 +20,10 @@ class ModelFile {
   size: number; // in bytes
 }
 
-@Schema({timestamps: true})
+@Schema({ timestamps: true,
+toJSON: { virtuals: true }, 
+  toObject: { virtuals: true }
+})
 export class Design extends Document {
 
     @Prop({required: true, type: Types.ObjectId})
@@ -41,8 +44,14 @@ export class Design extends Document {
     @Prop()
     displayModelUrl: string;
 
-    @Prop()
-    categoryId: string;
+    @Prop({ type: Types.ObjectId, ref: 'Category', })
+  categoryId: Types.ObjectId;
+
+  @Prop()
+  style: string;
+
+  @Prop({  enum: ['Male', 'Female', 'Unisex'], })
+  gender: string;
 
     @Prop()
     tags: string[];
@@ -86,10 +95,10 @@ export class Design extends Document {
     @Prop({ type: Types.ObjectId })
     currentWinnerId: Types.ObjectId;
 
-    @Prop({ type: String, enum: ['upcoming', 'active', 'ended', 'cancelled'], default: 'upcoming' })
+    @Prop({ type: String, enum: ['upcoming', 'active', 'ended', 'cancelled'] })
     status: AuctionStatus;
 
-    @Prop({ default: 0 })
+    @Prop({ })
     totalBids: number;
 
     @Prop({ default: 0 })
@@ -129,6 +138,13 @@ export const DesignSchema = SchemaFactory.createForClass(Design);
 DesignSchema.virtual('designerProfile', {
   ref: 'DesignerProfile',           
   localField: 'designerId', 
+  foreignField: 'userId',      
+  justOne: true,             
+});
+
+DesignSchema.virtual('currentWinnerProfile', {
+  ref: 'DesignerProfile',           
+  localField: 'currentWinnerId', 
   foreignField: 'userId',      
   justOne: true,             
 });

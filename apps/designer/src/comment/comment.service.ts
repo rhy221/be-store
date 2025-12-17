@@ -2,7 +2,7 @@ import { Comment } from '@app/database/schemas/comment.schema';
 import { Design } from '@app/database/schemas/design.schema';
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { CreateCommentDto, UpdateCommentDto } from './comment.dto';
 
 
@@ -16,13 +16,11 @@ export class CommentService {
   async createComment(userId: string, createCommentDto: CreateCommentDto) {
     const { productId, content, parentId } = createCommentDto;
 
-    // Check if product exists
     const product = await this.productModel.findById(productId);
     if (!product) {
       throw new NotFoundException('Product not found');
     }
 
-    // If replying, check if parent comment exists
     if (parentId) {
       const parentComment = await this.commentModel.findById(parentId);
       if (!parentComment || parentComment.productId.toString() !== productId) {
@@ -31,20 +29,19 @@ export class CommentService {
     }
 
     const comment = await this.commentModel.create({
-      userId,
-      productId,
+      userId: new Types.ObjectId(userId),
+      productId: new Types.ObjectId(productId),
       content,
-      parentId,
+      parentId: new Types.ObjectId(parentId),
     });
 
-    // Update product comment count
     await this.productModel.findByIdAndUpdate(productId, {
       $inc: { commentCount: 1 },
     });
 
     return this.commentModel
       .findById(comment._id)
-      .populate('userId', 'name email')
+      .populate('user', 'name email avatarUrl -_id')
       .exec();
   }
 
@@ -64,7 +61,7 @@ export class CommentService {
 
     return this.commentModel
       .findById(commentId)
-      .populate('userId', 'name email')
+      .populate('user', 'name email avatarUrl -_id')
       .exec();
   }
 
@@ -81,14 +78,13 @@ export class CommentService {
     const productId = comment.productId;
 
     // Delete comment and its replies
-    await this.commentModel.deleteMany({
+    const deletedCount = await this.commentModel.deleteMany({
       $or: [{ _id: commentId }, { parentId: commentId }],
     });
 
     // Update product comment count
-    const remainingCount = await this.commentModel.countDocuments({ productId });
     await this.productModel.findByIdAndUpdate(productId, {
-      commentCount: remainingCount,
+      $inc: { commentCount: -deletedCount.deletedCount },
     });
 
     return { message: 'Comment deleted successfully' };
@@ -96,25 +92,24 @@ export class CommentService {
 
   async getProductComments(productId: string, page: number = 1, limit: number = 10) {
     const skip = (page - 1) * limit;
-
-    // Get top-level comments (no parent)
+    
+    // Get top-level comments
     const [comments, total] = await Promise.all([
       this.commentModel
-        .find({ productId, parentId: null })
-        .populate('userId', 'name email')
+        .find({ productId: new Types.ObjectId(productId), parentId: null })
+        .populate('user', 'name email avatarUrl -_id')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .exec(),
       this.commentModel.countDocuments({ productId, parentId: null }),
     ]);
-
     // Get replies for each comment
     const commentsWithReplies = await Promise.all(
       comments.map(async (comment) => {
         const replies = await this.commentModel
           .find({ parentId: comment._id })
-          .populate('userId', 'name email')
+          .populate('user', 'name email avatarUrl -_id')
           .sort({ createdAt: 1 })
           .exec();
 

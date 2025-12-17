@@ -1,12 +1,15 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: true ,
+  toJSON: { virtuals: true }, 
+  toObject: { virtuals: true }
+})
 export class Comment extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: Types.ObjectId,required: true })
   userId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Design', required: true })
   productId: Types.ObjectId;
 
   @Prop({ required: true })
@@ -20,3 +23,10 @@ export class Comment extends Document {
 }
 
 export const CommentSchema = SchemaFactory.createForClass(Comment);
+
+CommentSchema.virtual('user', {
+  ref: 'DesignerProfile',           
+  localField: 'userId', 
+  foreignField: 'userId',      
+  justOne: true,             
+});

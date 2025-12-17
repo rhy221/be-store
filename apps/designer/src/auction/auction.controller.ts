@@ -8,11 +8,13 @@ import {
   UseGuards,
   Request,
   UploadedFiles,
+  Req,
 } from '@nestjs/common';
 import { AuctionService } from './auction.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
-import { CreateAuctionDto, PlaceBidDto } from './auction.dto';
+import { CreateAuctionDto, GetAuctionItemsDto, PlaceBidDto } from './auction.dto';
 import { StorageService } from '@app/storage/storage.service';
+import { OptionalJwtGuard } from '@app/common/guards/optional-jwt.guard';
 
 @Controller('auctions')
 export class AuctionController {
@@ -37,9 +39,13 @@ export class AuctionController {
     return this.auctionService.createAuction(createDto, sellerId);
   }
 
+  @UseGuards(OptionalJwtGuard)
   @Get()
-  async getAuctions(@Query() filters: any) {
-    return this.auctionService.getAuctions(filters);
+  async getAuctions(@Query() filters: GetAuctionItemsDto,
+  @Req() req
+      ) {
+          const userId = req?.user?.userId; 
+    return this.auctionService.getAuctions(filters, userId);
   }
 
   @Get('active')
@@ -47,9 +53,14 @@ export class AuctionController {
     return this.auctionService.getActiveAuctions();
   }
 
+  @UseGuards(OptionalJwtGuard)
   @Get(':id')
-  async getAuctionById(@Param('id') id: string) {
-    return this.auctionService.getAuctionById(id);
+  async getAuctionById(
+    @Param('id') id: string,     
+  @Request() req: any,
+) {
+    const viewerId = req?.user?.userId; 
+    return this.auctionService.getAuctionById(id, viewerId);
   }
 
   @Post(':id/bid')
@@ -61,6 +72,11 @@ export class AuctionController {
   ) {
     const bidderId = req.user?.userId || 'temp-bidder-id'; // Get from auth
     return this.auctionService.placeBid(auctionId, bidderId, body.amount);
+  }
+
+  @Post(':id/cancel')
+  async cancelAuctionById(@Param('id') id: string) {
+    return this.auctionService.cancelAuction(id);
   }
 
   @Get(':id/bids')

@@ -1,7 +1,10 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document, Types } from "mongoose";
 
-@Schema({timestamps: true})
+@Schema({ timestamps: true,
+toJSON: { virtuals: true }, 
+  toObject: { virtuals: true }
+})
 export class Following extends Document {
 
     @Prop({required: true, type: Types.ObjectId})
@@ -14,8 +17,8 @@ export class Following extends Document {
 export const FollowingSchema = SchemaFactory.createForClass(Following);
 
 FollowingSchema.virtual('designerProfile', {
-  ref: 'designerProfiles',           
-  localField: 'desingerId', 
-  foreignField: 'userId',      
-  justOne: true,             
+    ref: 'DesignerProfile',  // Tên model trong @Schema(name) hoặc tên class
+    localField: 'designerId', 
+    foreignField: 'userId',      
+    justOne: true,             
 });

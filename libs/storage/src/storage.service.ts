@@ -303,6 +303,24 @@ generateSignedUrl(publicId: string, format: string, resourceType: string = 'imag
 
     return cloudinary.url(publicId, options);
 }
+
+ getPublicIdFromUrl(url: string): string | null{
+  try {
+    // Regex giải thích:
+    // upload\/(?:v\d+\/)? : Tìm đoạn "upload/" theo sau có thể là version "v123/" (tùy chọn)
+    // ([^\.]+)           : Bắt lấy tất cả ký tự sau đó CHO ĐẾN KHI gặp dấu chấm (.)
+    // \.[a-zA-Z]+$       : Phần đuôi file (ví dụ .jpg, .png) ở cuối chuỗi
+    const regex = /upload\/(?:v\d+\/)?([^\.]+)\.[a-zA-Z]+$/;
+    
+    const match = url.match(regex);
+    
+    // match[1] sẽ chứa public_id (bao gồm cả folder nếu có)
+    return match ? match[1] : null;
+  } catch (error) {
+    console.error("Error extracting publicId:", error);
+    return null;
+  }
+};
 }
 
 

@@ -6,7 +6,7 @@ import { Document, Types } from 'mongoose';
     toObject: { virtuals: true }
  })
 export class Purchase extends Document {
-  @Prop({ required: true })
+  @Prop({type: Types.ObjectId, required: true })
   userId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'Design', required: true })

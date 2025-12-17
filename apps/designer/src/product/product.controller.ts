@@ -2,7 +2,7 @@ import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Q
 import { ProductService } from './product.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { FileFieldsInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { CreateCollectionDto, CreateDesignDto, FollowDesingerDto, LikeDesignDto, ProductQueryDto, UpdateCollectionDto, UpdateProductDto } from './product.dto';
+import { CreateCollectionDto, CreateDesignDto, FollowDesingerDto, GetGalleryItemsDto, GetStoreItemsDto, GetUserDesignsDto, LikeDesignDto, ProductQueryDto, UpdateCollectionDto, UpdateDesignDto, UpdateProductDto } from './product.dto';
 import { StorageService } from '@app/storage/storage.service';
 import { diskStorage, memoryStorage } from 'multer';
 import { extname, join } from 'path';
@@ -27,8 +27,7 @@ export class ProductController {
     @Get('detail/:id') 
     async get(@Param('id') id: string, @Req() req) {
         const userId = req?.user?.userId;
-        console.log(userId);
-        return await this.productService.getOneById(id, userId);
+        return this.productService.getOneById(id, userId);
     }
 
     @UseGuards(JwtGuard)
@@ -115,6 +114,7 @@ export class ProductController {
               {
                 publicId: modelsRes.key,
                 format: modelsRes.format || "",
+                originalName: files.models[0].originalname,
                 size: modelsRes.bytes || 0,
               }
             ],
@@ -129,24 +129,58 @@ export class ProductController {
     }
 
     @UseGuards(JwtGuard)
+    @UseInterceptors(FileFieldsInterceptor([
+    { name: 'images' },
+    { name: 'models'},
+    ],))
+    @Post('update/:id') 
+    async update(
+    @UploadedFiles() files: {
+        images?: Express.Multer.File[];
+        models?: Express.Multer.File[];
+    }, 
+    @Body() body: UpdateDesignDto,
+    @Param('id') id: string,
+    @Req() req 
+    ) {
+        if( (!body.oldImages || body.oldImages.length <= 0) && (!files.images || files.images.length <= 0))
+            throw new BadRequestException("image is required")
+        if((!files.models || files.models.length <= 0) && (!body.oldModels || body.oldModels.length <= 0))
+            throw new BadRequestException("model is required")
+       return this.productService.updateOneById(id, body, files.images!, files.models!);
+
+    }
+
+    @UseGuards(JwtGuard)
     @Get(':id/comments') 
     async getOneComments(@Param('id') id: string) {
         return await this.productService.getOneCommentsById(id);
     }
 
-    @Get('list/categories')
+    @Get('categories')
     async getCategories() {
         return await this.productService.getCategories();
     }
 
+    @UseGuards(OptionalJwtGuard)
     @Get('gallery')
-    async getGalleryItems() {
-        return this.productService.getGalleryItems();
+    async getGalleryItems(
+      @Query() query: GetGalleryItemsDto,
+      @Req() req
+    ) {      console.log(query);
+
+        const userId = req?.user?.userId; 
+        return this.productService.getGalleryItems(query, userId);
     }
     
-     @Get('store')
-    async getStoreItems() {
-        return this.productService.getStoreItems();
+    @UseGuards(OptionalJwtGuard)
+    @Get('store')
+    async getStoreItems(
+      @Query() query: GetStoreItemsDto,
+      @Req() req
+    ) {
+        const userId = req?.user?.userId; 
+        return this.productService.getStoreItems(query, userId);
     }
 
     @UseGuards(JwtGuard)
@@ -181,9 +215,40 @@ export class ProductController {
 
   @Get('my-products')
   @UseGuards(JwtGuard)
-  async getMyProducts(@Query() query: ProductQueryDto, @Req() req) {
+  async getMyProducts(@Query() query: any, @Req() req) {
+    console.log(query);
     return this.productService.getMyProducts(req.user.userId, query);
   }
+
+  @UseGuards(OptionalJwtGuard)
+  @Get('user/:userId')
+  async getUserDesigns(
+    @Param('userId') userId: string,
+    @Query() query: GetUserDesignsDto,
+     @Req() req
+  ) {
+        const viewerId = req?.user?.userId; 
+    return this.productService.findAllByDesigner(userId, query, viewerId);
+  }
+
+  @UseGuards(OptionalJwtGuard)
+  @Get('user/:userId/likes')
+  async getDesignerLikedModels(
+    @Param('userId') userId: string,
+    @Query() query: GetUserDesignsDto,
+    @Req() req
+  ) {
+    const viewerId = req?.user?.userId;
+    return this.productService.findAllDesignerLikedModels(userId, query, viewerId);
+  }
+
+  @Get('user/:userId/following')
+async getUserFollowing(
+    @Param('userId') userId: string,
+    @Query() query: any
+) {
+    return this.productService.getFollowingList(userId, query);
+}
 
 //   @Get(':id')
 //   async getProductById(@Param('id') id: string, @Request() req) {
@@ -230,6 +295,7 @@ export class ProductController {
   @Delete(':id')
   @UseGuards(JwtGuard)
   async deleteProduct(@Req() req, @Param('id') id: string) {
+    
     return this.productService.deleteProduct(req.user.userId, id);
   }
 

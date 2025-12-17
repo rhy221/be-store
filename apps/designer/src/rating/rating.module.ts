@@ -5,12 +5,15 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Rating, RatingSchema } from '@app/database/schemas/rating.schema';
 import { Design, DesignSchema } from '@app/database/schemas/design.schema';
 import { Purchase, PurchaseSchema } from '@app/database/schemas/purchase.schema';
+import { DesignerProfile, DesignerProfileSchema } from '@app/database/schemas/designerProfile.shema';
 
 @Module({
   imports: [MongooseModule.forFeature([
       {name: Rating.name, schema: RatingSchema},
       {name: Design.name, schema: DesignSchema},
       {name: Purchase.name, schema: PurchaseSchema},
+            {name: DesignerProfile.name, schema: DesignerProfileSchema},
+
     ])],
   controllers: [RatingController],
   providers: [RatingService]

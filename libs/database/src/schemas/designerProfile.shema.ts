@@ -20,6 +20,9 @@ export class DesignerProfile extends Document {
     avatarUrl: string;
 
     @Prop()
+    bannerUrl: string;
+
+    @Prop()
     bio: string;
 
     @Prop()

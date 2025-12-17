@@ -16,6 +16,8 @@ import { PurchaseModule } from './purchase/purchase.module';
 import { CollectionModule } from './collection/collection.module';
 import { RatingModule } from './rating/rating.module';
 import { CommentModule } from './comment/comment.module';
+import { SalesModule } from './sales/sales.module';
+import { TryonModule } from './tryon/tryon.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { CommentModule } from './comment/comment.module';
     CollectionModule,
     RatingModule,
     CommentModule,
+    SalesModule,
+    TryonModule,
   ],
   controllers: [DesignerController],
   providers: [DesignerService],

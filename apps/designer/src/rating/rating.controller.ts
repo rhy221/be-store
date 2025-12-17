@@ -8,7 +8,7 @@ import { CreateRatingDto, UpdateRatingDto } from './rating.dto';
 export class RatingController {
   constructor(private readonly ratingService: RatingService) {}
 
-  @Post()
+   @Post()
   @UseGuards(JwtGuard)
   async createRating(@Request() req, @Body() createRatingDto: CreateRatingDto) {
     return this.ratingService.createRating(req.user.userId, createRatingDto);
@@ -37,6 +37,11 @@ export class RatingController {
     @Query('limit') limit?: number
   ) {
     return this.ratingService.getProductRatings(productId, page, limit);
+  }
+
+  @Get('product/:productId/distribution')
+  async getRatingDistribution(@Param('productId') productId: string) {
+    return this.ratingService.getRatingDistribution(productId);
   }
 
   @Get('my-rating/:productId')

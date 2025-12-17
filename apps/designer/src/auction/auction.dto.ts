@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsDate, IsArray, IsOptional, Min } from 'class-validator';
+import { IsString, IsNumber, IsDate, IsArray, IsOptional, Min, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateAuctionDto {
@@ -39,4 +39,33 @@ export class PlaceBidDto {
   @Type(() => Number)
   @Min(0)
   amount: number;
+}
+
+export class GetAuctionItemsDto {
+  @IsOptional()
+  @IsString()
+  categorySlug?: string; 
+
+  @IsOptional()
+  @IsString()
+  style?: string;
+
+  @IsOptional()
+  @IsEnum(['Male', 'Female', 'Unisex'])
+  gender?: string;
+
+  @IsOptional()
+  @IsEnum(['upcoming', 'active', 'ended', 'cancelled'])
+  status?: string;
+
+  @IsOptional()
+  @IsEnum(['lowestPrice', 'highestPrice', 'newest', 'ending']) 
+  sortBy?: 'lowestPrice'|'highestPrice'| 'newest'| 'ending';
+
+  @IsOptional()
+  @IsString()
+  search?: string; 
+  
+  @IsOptional()
+  page?: number;
 }

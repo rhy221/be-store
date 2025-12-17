@@ -80,7 +80,12 @@ export class AuthController {
                 const token = this.authService.createJwt(user);
                 const userProfile = await this.userService.findUserProfile(user._id as string, "basics");
                 const result =  {
-                    avatarUrl: userProfile?.avatarUrl,
+                    user: {
+                        id: userProfile?.userId,
+                        email: userProfile?.email,
+                        name: userProfile?.name,
+                        avatarUrl: userProfile?.avatarUrl,
+                    },
                     accessToken: token,
                 };  
                 return result; 

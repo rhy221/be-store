@@ -1,6 +1,8 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Request, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Request, Req, Query } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
+import { JwtAuthGuard } from 'apps/be-store/src/auth/guards/jwt-auth.guard';
+import { GetMyOrdersDto } from './order.dto';
 
 @Controller('orders')
 @UseGuards(JwtGuard)
@@ -15,6 +17,11 @@ export class OrderController {
   @Get()
   async getOrders(@Req() req) {
     return this.orderService.getOrders(req.user.userId);
+  }
+
+  @Get('my-orders')
+  async getMyOrders(@Req() req, @Query() query: GetMyOrdersDto) {
+    return this.orderService.getMyOrders(req.user.userId, query);
   }
 
   @Get(':id')
