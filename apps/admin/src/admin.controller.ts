@@ -10,8 +10,6 @@ export class AdminController {
     return this.adminService.getDashboardStats()
   }
 
-  /* ================= USERS ================= */
-
   @Get('users')
   getUsers(@Query() q: any) {
     return this.adminService.getUsers(q)
@@ -22,7 +20,11 @@ export class AdminController {
     return this.adminService.getUserDetail(id)
   }
 
-  /* ================= CATEGORIES ================= */
+  @Get('users/:id/designs')
+  async getUserDesigns(@Param('id') id: string) {
+    return this.adminService.getUserDesigns(id);
+  }
+
 
   @Get('categories')
   getCategories(@Query() q: any) {
@@ -35,10 +37,7 @@ export class AdminController {
   }
 
   @Get('categories/:id/products')
-  getCategoryProducts(
-    @Param('id') id: string,
-    @Query('search') search?: string,
-  ) {
+  getCategoryProducts(@Param('id') id: string, @Query('search') search?: string) {
     return this.adminService.getCategoryProducts(id, search)
   }
 
@@ -57,8 +56,6 @@ export class AdminController {
     return this.adminService.deleteCategory(id)
   }
 
-  /* ================= REPORTS ================= */
-
   @Get('reports')
   getReports() {
     return this.adminService.getReports()
@@ -68,8 +65,6 @@ export class AdminController {
   createReport(@Body() dto: { content: string; category: string; createdBy: string }) {
     return this.adminService.createReport(dto)
   }
-
-  /* ================= RANKINGS ================= */
 
   @Get('rankings')
   getTopRankings() {
@@ -93,6 +88,11 @@ export class AdminController {
 
   @Get('role-stats')
   getRoleStats() {
-    return this.adminService.getRoleStats();
+    return this.adminService.getRoleStats()
+  }
+
+  @Get('unlock-requests')
+  getUnlockRequests() {
+    return this.adminService.getUnlockRequests()
   }
 }

@@ -17,6 +17,8 @@ import {
   TemplateSchema,
   Designer,
   DesignerSchema,
+  UnlockRequest,     
+  UnlockRequestSchema,
 } from './schemas/schemas';
 
 @Module({
@@ -32,6 +34,7 @@ import {
       { name: Report.name, schema: ReportSchema },
       { name: Template.name, schema: TemplateSchema, collection: 'designs' },
       { name: Designer.name, schema: DesignerSchema, collection: 'designerProfiles' },
+      { name: UnlockRequest.name, schema: UnlockRequestSchema },
     ]),
   ],
   controllers: [AdminController],
