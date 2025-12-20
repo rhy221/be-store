@@ -95,4 +95,12 @@ export class AdminController {
   getUnlockRequests() {
     return this.adminService.getUnlockRequests()
   }
+
+  @Patch('users/:id/state')
+  updateUserState(
+    @Param('id') id: string,
+    @Body() dto: { state: 'active' | 'blocked' },
+  ) {
+    return this.adminService.updateUserState(id, dto.state);
+  }
 }

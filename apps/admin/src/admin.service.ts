@@ -144,4 +144,13 @@ export class AdminService {
   async getUnlockRequests() {
     return this.unlockRequestModel.find().lean();
   }
+
+  async updateUserState(id: string, state: 'active' | 'blocked') {
+  return this.userModel.findByIdAndUpdate(
+    id,
+    { state },
+    { new: true },
+  );
+}
+
 }

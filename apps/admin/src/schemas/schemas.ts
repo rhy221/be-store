@@ -12,11 +12,19 @@ export class User extends Document {
   @Prop({ required: true, enum: ['designer', 'customer'], default: 'customer' })
   role: string;
 
+  @Prop({
+    type: String,
+    enum: ['active', 'blocked', 'pending'],
+    default: 'active',
+  })
+  state: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
+
 
 @Schema({ timestamps: true, versionKey: false })
 export class Category extends Document {
@@ -38,6 +46,7 @@ export class Category extends Document {
 
 export const CategorySchema = SchemaFactory.createForClass(Category);
 
+
 @Schema({ timestamps: true, versionKey: false })
 export class Report extends Document {
   @Prop({ required: true })
@@ -54,6 +63,7 @@ export class Report extends Document {
 }
 
 export const ReportSchema = SchemaFactory.createForClass(Report);
+
 
 @Schema({ timestamps: true, versionKey: false, collection: 'designs' })
 export class Template extends Document {
@@ -102,8 +112,15 @@ export class Template extends Document {
   @Prop({ default: 0 })
   totalEarning: number;
 
-  @Prop({ type: [{ publicId: String, format: String, originalName: String, size: Number }] })
-  modelFiles: { publicId: string; format: string; originalName: string; size: number }[];
+  @Prop({
+    type: [{ publicId: String, format: String, originalName: String, size: Number }],
+  })
+  modelFiles: {
+    publicId: string;
+    format: string;
+    originalName: string;
+    size: number;
+  }[];
 
   @Prop()
   startingPrice?: number;
@@ -143,8 +160,6 @@ export class Template extends Document {
 
   createdAt: Date;
   updatedAt: Date;
-
-  
 }
 
 export const TemplateSchema = SchemaFactory.createForClass(Template);
@@ -195,6 +210,7 @@ export class Designer extends Document {
 }
 
 export const DesignerSchema = SchemaFactory.createForClass(Designer);
+
 
 @Schema({ timestamps: true, versionKey: false })
 export class UnlockRequest extends Document {
