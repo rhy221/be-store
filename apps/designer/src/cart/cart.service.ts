@@ -93,7 +93,7 @@ async getCart(userId: string) {
     if (!product) throw new NotFoundException('Product not found');
 
     // Check if already purchased
-    const purchase = await this.purchaseModel.findOne({ userId, productId });
+    const purchase = await this.purchaseModel.findOne({ userId: new Types.ObjectId(userId), productId: new Types.ObjectId(productId) });
     if (purchase) {
       throw new BadRequestException('You already own this product');
     }

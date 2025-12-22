@@ -94,27 +94,146 @@ export class SalesService {
   //   };
   // }
 
-  async getSellerSales(designerId: string, query: GetSalesDto) {
+//   async getSellerSales(designerId: string, query: GetSalesDto) {
+//     const start = new Date(query.startDate);
+//     const end = new Date(query.endDate);
+//     end.setHours(23, 59, 59, 999);
+
+//     const designerObjectId = new Types.ObjectId(designerId);
+    
+//     // Chuẩn bị filter bổ sung
+//     const typeFilter = query.type && query.type !== 'all' ? query.type : null;
+//     const searchText = query.search ? query.search.trim() : null;
+
+//     const pipeline: PipelineStage[] = [
+//       // 1. Lọc Time Range
+//       {
+//         $match: {
+//           createdAt: { $gte: start, $lte: end },
+//         },
+//       },
+//       // 2. Unwind items
+//       { $unwind: '$items' },
+//       // 3. Lookup Design Info
+//       {
+//         $lookup: {
+//           from: 'designs', 
+//           localField: 'items.productId',
+//           foreignField: '_id',
+//           as: 'productInfo',
+//         },
+//       },
+//       { $unwind: '$productInfo' },
+      
+//       // 4. Lọc Item của Designer
+//       {
+//         $match: {
+//           'productInfo.designerId': designerObjectId,
+//         },
+//       },
+
+//       // 5. [NEW] Filter by Type (Store/Auction)
+//       // Giả định field type nằm trong 'designs'. Nếu nằm trong 'items', sửa thành 'items.type'
+//       ...(typeFilter
+//         ? [
+//             {
+//               $match: {
+//                 'productInfo.type': typeFilter, 
+//               },
+//             },
+//           ]
+//         : []),
+
+//       // 6. [NEW] Filter by Search Keyword (Title or Order ID)
+//       ...(searchText
+//         ? [
+//             {
+//               // Chúng ta cần convert _id sang string để search regex (nếu muốn search một phần ID)
+//               // Hoặc chỉ search items.title nếu search ID quá phức tạp về performance
+//               $addFields: {
+//                 orderIdStr: { $toString: '$_id' } 
+//               }
+//             },
+//             {
+//               $match: {
+//                 $or: [
+//                   // Tìm theo tên sản phẩm (Case insensitive)
+//                   { 'items.title': { $regex: searchText, $options: 'i' } },
+//                   // Tìm theo Order ID
+//                   { 'orderIdStr': { $regex: searchText, $options: 'i' } }
+//                 ],
+//               },
+//             },
+//           ]
+//         : []),
+
+//       // 7. Group & Facet (Giữ nguyên logic cũ)
+//       {
+//         $facet: {
+//           summary: [
+//             {
+//               $group: {
+//                 _id: null,
+//                 totalItemsSold: { $sum: 1 },
+//                 totalRevenue: { $sum: '$items.price' },
+//               },
+//             },
+//           ],
+//           orders: [
+//             {
+//               $group: {
+//                 _id: '$_id',
+//                 orderDate: { $first: '$createdAt' },
+//                 buyerId: { $first: '$userId' },
+//                 sellerOrderTotal: { $sum: '$items.price' },
+//                 items: {
+//                   $push: {
+//                     title: '$items.title',
+//                     price: '$items.price',
+//                     imageUrl: '$items.imageUrl',
+//                     productId: '$items.productId',
+//                   },
+//                 },
+//               },
+//             },
+//             { $sort: { orderDate: -1 } },
+//           ],
+//         },
+//       },
+//     ];
+
+//     const result = await this.orderModel.aggregate(pipeline);
+
+//     const stats = result[0];
+//     return {
+//       summary: stats.summary[0] || { totalItemsSold: 0, totalRevenue: 0 },
+//       orders: stats.orders,
+//     };
+// }
+
+async getSellerSales(designerId: string, query: GetSalesDto) {
     const start = new Date(query.startDate);
     const end = new Date(query.endDate);
     end.setHours(23, 59, 59, 999);
 
     const designerObjectId = new Types.ObjectId(designerId);
     
-    // Chuẩn bị filter bổ sung
     const typeFilter = query.type && query.type !== 'all' ? query.type : null;
     const searchText = query.search ? query.search.trim() : null;
+    
+    // Pagination params
+    const page = Number(query.page) || 1;
+    const limit = Number(query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     const pipeline: PipelineStage[] = [
-      // 1. Lọc Time Range
+      // ... (Các bước 1->6 giữ nguyên như cũ: Match Time, Unwind, Lookup, Filter Designer, Filter Type, Search) ...
       {
         $match: {
           createdAt: { $gte: start, $lte: end },
         },
       },
-      // 2. Unwind items
       { $unwind: '$items' },
-      // 3. Lookup Design Info
       {
         $lookup: {
           from: 'designs', 
@@ -124,42 +243,21 @@ export class SalesService {
         },
       },
       { $unwind: '$productInfo' },
-      
-      // 4. Lọc Item của Designer
       {
         $match: {
           'productInfo.designerId': designerObjectId,
         },
       },
-
-      // 5. [NEW] Filter by Type (Store/Auction)
-      // Giả định field type nằm trong 'designs'. Nếu nằm trong 'items', sửa thành 'items.type'
       ...(typeFilter
-        ? [
-            {
-              $match: {
-                'productInfo.type': typeFilter, 
-              },
-            },
-          ]
+        ? [{ $match: { 'productInfo.type': typeFilter } }]
         : []),
-
-      // 6. [NEW] Filter by Search Keyword (Title or Order ID)
       ...(searchText
         ? [
-            {
-              // Chúng ta cần convert _id sang string để search regex (nếu muốn search một phần ID)
-              // Hoặc chỉ search items.title nếu search ID quá phức tạp về performance
-              $addFields: {
-                orderIdStr: { $toString: '$_id' } 
-              }
-            },
+            { $addFields: { orderIdStr: { $toString: '$_id' } } },
             {
               $match: {
                 $or: [
-                  // Tìm theo tên sản phẩm (Case insensitive)
                   { 'items.title': { $regex: searchText, $options: 'i' } },
-                  // Tìm theo Order ID
                   { 'orderIdStr': { $regex: searchText, $options: 'i' } }
                 ],
               },
@@ -167,47 +265,67 @@ export class SalesService {
           ]
         : []),
 
-      // 7. Group & Facet (Giữ nguyên logic cũ)
+      // --- BƯỚC 7: GROUP & FACET (CẬP NHẬT PHÂN TRANG) ---
+      // Trước khi phân trang, ta cần group lại thành từng đơn hàng để đếm đúng số lượng đơn (chứ không phải số lượng items lẻ)
       {
-        $facet: {
-          summary: [
-            {
-              $group: {
-                _id: null,
-                totalItemsSold: { $sum: 1 },
-                totalRevenue: { $sum: '$items.price' },
-              },
-            },
-          ],
-          orders: [
-            {
-              $group: {
-                _id: '$_id',
-                orderDate: { $first: '$createdAt' },
-                buyerId: { $first: '$userId' },
-                sellerOrderTotal: { $sum: '$items.price' },
-                items: {
-                  $push: {
+         $group: {
+            _id: '$_id', // Group by Order ID
+            orderDate: { $first: '$createdAt' },
+            sellerOrderTotal: { $sum: '$items.price' },
+            items: {
+                $push: {
                     title: '$items.title',
                     price: '$items.price',
                     imageUrl: '$items.imageUrl',
                     productId: '$items.productId',
-                  },
                 },
-              },
             },
-            { $sort: { orderDate: -1 } },
+            // Để tính tổng revenue của toàn bộ (không bị ảnh hưởng bởi pagination), ta cần 1 bước tính toán riêng hoặc chấp nhận tính trên FE dựa trên data trả về (nhưng nếu phân trang thì FE không tính tổng all được).
+            // Cách tốt nhất: Tính Total Revenue ngay trong facet
+         }
+      },
+      
+      { $sort: { orderDate: -1 } }, // Sắp xếp mới nhất trước
+
+      {
+        $facet: {
+          // Metadata: Đếm tổng số đơn hàng & Tổng doanh thu toàn bộ (theo bộ lọc hiện tại)
+          metadata: [
+             { 
+               $group: {
+                  _id: null,
+                  total: { $sum: 1 }, // Tổng số đơn hàng
+                  totalRevenue: { $sum: '$sellerOrderTotal' } // Tổng doanh thu
+               }
+             }
+          ],
+          // Data: Lấy dữ liệu theo trang
+          data: [
+            { $skip: skip },
+            { $limit: limit },
           ],
         },
       },
     ];
 
     const result = await this.orderModel.aggregate(pipeline);
+    
+    const facetResult = result[0];
+    const metadata = facetResult.metadata[0] || { total: 0, totalRevenue: 0 };
+    const orders = facetResult.data || [];
 
-    const stats = result[0];
     return {
-      summary: stats.summary[0] || { totalItemsSold: 0, totalRevenue: 0 },
-      orders: stats.orders,
+      summary: {
+        totalItemsSold: metadata.total, // Ở đây là Total Orders, nếu muốn Total Items sold cần group kiểu khác
+        totalRevenue: metadata.totalRevenue,
+      },
+      orders: orders,
+      meta: {
+        page,
+        limit,
+        total: metadata.total,
+        totalPages: Math.ceil(metadata.total / limit),
+      }
     };
 }
 }

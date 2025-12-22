@@ -4,6 +4,10 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateCommentDto, UpdateCommentDto } from './comment.dto';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationService } from '../notification/notification.service';
+import { DesignerProfile } from '@app/database/schemas/designerProfile.shema';
+import { NotificationType } from '../notification/notificatio.dto';
 
 
 @Injectable()
@@ -11,14 +15,22 @@ export class CommentService {
   constructor(
     @InjectModel(Comment.name) private commentModel: Model<Comment>,
     @InjectModel(Design.name) private productModel: Model<Design>,
+    @InjectModel(DesignerProfile.name) private designerModel: Model<DesignerProfile>,
+    private readonly notificationGateway: NotificationGateway,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createComment(userId: string, createCommentDto: CreateCommentDto) {
     const { productId, content, parentId } = createCommentDto;
 
+    const commenter = await this.designerModel.findOne({userId: new Types.ObjectId(userId)}).exec();
+    if (!commenter) {
+      throw new NotFoundException('User not found');
+    }
+
     const product = await this.productModel.findById(productId);
     if (!product) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Design not found');
     }
 
     if (parentId) {
@@ -27,17 +39,28 @@ export class CommentService {
         throw new NotFoundException('Parent comment not found');
       }
     }
-
+    
     const comment = await this.commentModel.create({
       userId: new Types.ObjectId(userId),
       productId: new Types.ObjectId(productId),
       content,
-      parentId: new Types.ObjectId(parentId),
+      parentId: parentId ? new Types.ObjectId(parentId) : undefined,
     });
 
     await this.productModel.findByIdAndUpdate(productId, {
       $inc: { commentCount: 1 },
     });
+
+     await this.notificationService.create({
+                userId: product.designerId.toString(),
+                title: `${commenter.name} comment on your design`,
+                type: NotificationType.COMMENT,
+                thumbnail: commenter.avatarUrl || '',
+                link: `/detail/${productId}`,
+                relatedEntityId: productId,
+
+              });
+    
 
     return this.commentModel
       .findById(comment._id)
@@ -79,7 +102,7 @@ export class CommentService {
 
     // Delete comment and its replies
     const deletedCount = await this.commentModel.deleteMany({
-      $or: [{ _id: commentId }, { parentId: commentId }],
+      $or: [{ _id: new Types.ObjectId(commentId) }, { parentId: new Types.ObjectId(commentId) }],
     });
 
     // Update product comment count

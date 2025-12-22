@@ -5,6 +5,8 @@ import * as streamifier from 'streamifier';
 import { IStorageService, UploadResult } from './interfaces';
 import pLimit from 'p-limit';
 import path from 'path';
+import * as fs from 'fs';
+import * as os from 'os';
 
 type ResourceType = 'image' | 'raw';
 
@@ -64,13 +66,13 @@ export class StorageService implements IStorageService {
   // file-upload.service.ts
 async uploadFile(
     file: Express.Multer.File,
-    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string; isPrivate?: boolean }, // Thêm isPrivate
+    options?: { resourceType?: ResourceType; folder?: string; tags?: string[]; publicId?: string; isPrivate?: boolean },
   ): Promise<UploadResult> {
     if (!file || !file.buffer) throw new BadRequestException('File is required');
 
     const params: any = {
       resource_type: options?.resourceType ?? 'image',
-      type: options?.isPrivate ? 'private' : 'upload', 
+      type: options?.isPrivate ? 'private' : 'upload',
     };
 
     const extName = path.extname(file.originalname).toLowerCase(); // .glb
@@ -78,48 +80,95 @@ async uploadFile(
 
     if (options?.folder) params.folder = options.folder;
     if (options?.tags) params.tags = options.tags.join(',');
-    // if (options?.publicId) params.public_id = options.publicId;
+
+    // --- Xử lý Public ID ---
     if (options?.publicId) {
       if (params.resource_type === 'raw' || params.resource_type === 'auto') {
-         // Nếu user truyền publicId mà chưa có đuôi, ta tự nối đuôi vào
-         if (!options.publicId.toLowerCase().endsWith(extName)) {
-            params.public_id = `${options.publicId}${extName}`;
-         } else {
-            params.public_id = options.publicId;
-         }
+        // Nếu user truyền publicId mà chưa có đuôi, ta tự nối đuôi vào
+        if (!options.publicId.toLowerCase().endsWith(extName)) {
+          params.public_id = `${options.publicId}${extName}`;
+        } else {
+          params.public_id = options.publicId;
+        }
       } else {
-         params.public_id = options.publicId;
+        params.public_id = options.publicId;
       }
     } else {
-       // Nếu không có publicId tùy chọn, Cloudinary sẽ sinh random.
-       // Với file raw, để giữ đuôi file, ta nên dùng use_filename
-       if (params.resource_type === 'raw') {
-          params.use_filename = true;
-          params.unique_filename = true; // Giữ tên gốc + random string để tránh trùng
-       }
+      if (params.resource_type === 'raw') {
+        params.use_filename = true;
+        params.unique_filename = true;
+      }
     }
+    
     if (this.uploadPreset) params.upload_preset = this.uploadPreset;
 
-    return new Promise<UploadResult>((resolve, reject) => {
-      const uploadStream = cloudinary.uploader.upload_stream(params, (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('No result from Cloudinary'));
-        
-        const res: UploadResult = {
-          key: result.public_id,
-          url: result.secure_url, // URL này sẽ không chạy được nếu type='private' (trả về 401/404)
-          width: result.width,
-          height: result.height,
-          format: result.format || format,
-          bytes: result.bytes,
-          raw: result,
-        };
-        resolve(res);
-      });
+    // --- LOGIC PHÂN MẢNH CHO RAW / AUTO ---
+    if (params.resource_type === 'raw' || params.resource_type === 'auto') {
+      // 1. Tạo đường dẫn file tạm
+      const tempFilePath = path.join(os.tmpdir(), `${Date.now()}-${file.originalname}`);
+      
+      try {
+        // 2. Ghi buffer ra file tạm
+        fs.writeFileSync(tempFilePath, file.buffer);
 
-      streamifier.createReadStream(file.buffer).pipe(uploadStream);
-    });
-}
+        // 3. Upload bằng upload_large (Hỗ trợ chunking)
+        return new Promise<UploadResult>((resolve, reject) => {
+          cloudinary.uploader.upload_large(
+            tempFilePath,
+            {
+              ...params,
+              chunk_size: 6000000, // Cắt mỗi chunk ~6MB (Cloudinary mặc định 20MB, tối thiểu 5MB)
+            },
+            (error, result) => {
+              // 4. Xóa file tạm sau khi có kết quả (dù thành công hay thất bại)
+              if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+
+              if (error) return reject(error);
+              if (!result) return reject(new Error('No result from Cloudinary'));
+
+              const res: UploadResult = {
+                key: result.public_id,
+                url: result.secure_url,
+                width: result.width,
+                height: result.height,
+                format: result.format || format,
+                bytes: result.bytes,
+                raw: result,
+              };
+              resolve(res);
+            },
+          );
+        });
+      } catch (err) {
+        // Xóa file tạm nếu có lỗi trong quá trình ghi file
+        if (fs.existsSync(tempFilePath)) fs.unlinkSync(tempFilePath);
+        throw new BadRequestException('Failed to process large file upload: ' + err.message);
+      }
+    } 
+    
+    // --- LOGIC STREAM BÌNH THƯỜNG (IMAGE / VIDEO NHỎ) ---
+    else {
+      return new Promise<UploadResult>((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(params, (error, result) => {
+          if (error) return reject(error);
+          if (!result) return reject(new Error('No result from Cloudinary'));
+
+          const res: UploadResult = {
+            key: result.public_id,
+            url: result.secure_url,
+            width: result.width,
+            height: result.height,
+            format: result.format || format,
+            bytes: result.bytes,
+            raw: result,
+          };
+          resolve(res);
+        });
+
+        streamifier.createReadStream(file.buffer).pipe(uploadStream);
+      });
+    }
+  }
 
   async uploadFileByPath(
   file: Express.Multer.File,

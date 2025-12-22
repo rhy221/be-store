@@ -1,4 +1,5 @@
-import { IsDateString, IsOptional, IsString } from 'class-validator';
+import { IsDateString, IsOptional, IsString, IsNumber, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class GetSalesDto {
   @IsDateString()
@@ -9,9 +10,21 @@ export class GetSalesDto {
 
   @IsOptional()
   @IsString()
-  type?: string; // 'all', 'fixed', 'auction'
+  type?: string;
 
   @IsOptional()
   @IsString()
-  search?: string; // Keyword
+  search?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  limit?: number = 10;
 }

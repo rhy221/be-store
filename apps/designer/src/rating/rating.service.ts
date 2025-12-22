@@ -6,6 +6,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { CreateRatingDto, UpdateRatingDto } from './rating.dto';
 import { DesignerProfile } from '@app/database/schemas/designerProfile.shema';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/notificatio.dto';
 
 
 @Injectable()
@@ -14,7 +17,9 @@ export class RatingService {
     @InjectModel(Rating.name) private ratingModel: Model<Rating>,
     @InjectModel(Design.name) private productModel: Model<Design>,
     @InjectModel(Purchase.name) private purchaseModel: Model<Purchase>,
-     @InjectModel(DesignerProfile.name) private designerModel: Model<DesignerProfile>) {}
+    @InjectModel(DesignerProfile.name) private designerModel: Model<DesignerProfile>,
+    private readonly notificationGateway: NotificationGateway,
+    private readonly notificationService: NotificationService) {}
    
 
 //  async createRating(userId: string, createRatingDto: CreateRatingDto) {
@@ -110,6 +115,19 @@ export class RatingService {
 async createRating(userId: string, createRatingDto: CreateRatingDto) {
     const { productId, rating, review } = createRatingDto;
 
+    const rater = await this.designerModel.findOne({ 
+      userId: new Types.ObjectId(userId), 
+    });
+    if (!rater) {
+      throw new NotFoundException('User not found');
+    }
+
+    const design = await this.productModel.findById(productId);
+    if (!design) {
+      throw new NotFoundException('Design not found');
+    }
+
+
     // Check purchase
     const purchase = await this.purchaseModel.findOne({ 
       userId: new Types.ObjectId(userId), 
@@ -118,6 +136,8 @@ async createRating(userId: string, createRatingDto: CreateRatingDto) {
     if (!purchase) {
       throw new ForbiddenException('You must purchase this product before rating');
     }
+
+    
 
     // Check existing
     const existingRating = await this.ratingModel.findOne({ 
@@ -143,6 +163,16 @@ async createRating(userId: string, createRatingDto: CreateRatingDto) {
     // Cập nhật stats cho cả Product và Designer
     await this.updateRatingStats(productId);
 
+   await this.notificationService.create({
+                    userId: design.designerId.toString(),
+                    title: `${rater.name} has rated your design`,
+                    type: NotificationType.RATING,
+                    thumbnail: rater.avatarUrl || '',
+                    link: `/detail/${productId}`,
+                    relatedEntityId: productId
+                  });
+        
+
     return this.ratingModel
       .findById(newRating._id)
       .populate('user', 'name email avatarUrl -_id')
@@ -150,6 +180,19 @@ async createRating(userId: string, createRatingDto: CreateRatingDto) {
   }
 
   async updateRating(userId: string, productId: string, updateRatingDto: UpdateRatingDto) {
+    
+    const rater = await this.designerModel.findOne({ 
+      userId: new Types.ObjectId(userId), 
+    });
+    if (!rater) {
+      throw new NotFoundException('User not found');
+    }
+
+    const design = await this.productModel.findById(productId);
+    if (!design) {
+      throw new NotFoundException('Design not found');
+    }
+    
     const rating = await this.ratingModel.findOne({ 
       userId: new Types.ObjectId(userId), 
       productId: new Types.ObjectId(productId) 
@@ -180,6 +223,16 @@ async createRating(userId: string, createRatingDto: CreateRatingDto) {
 
     // Cập nhật stats cho cả Product và Designer
     await this.updateRatingStats(productId);
+
+    await this.notificationService.create({
+                    userId: design.designerId.toString(),
+                    title: `${rater.name} has updated rating on your design`,
+                    type: NotificationType.RATING,
+                    thumbnail: rater.avatarUrl || '',
+                    link: `/detail/${productId}`,
+                    relatedEntityId: productId,
+                  });
+        
 
     return this.ratingModel
       .findById(rating._id)

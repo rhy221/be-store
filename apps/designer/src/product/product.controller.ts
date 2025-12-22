@@ -151,11 +151,15 @@ export class ProductController {
 
     }
 
-    @UseGuards(JwtGuard)
+
     @Get(':id/comments') 
     async getOneComments(@Param('id') id: string) {
         return await this.productService.getOneCommentsById(id);
     }
+    @Get(':id/likes')
+  async getDesignLikes(@Param('id') id: string) {
+    return this.productService.getLikesByDesignId(id);
+  }
 
     @Get('categories')
     async getCategories() {

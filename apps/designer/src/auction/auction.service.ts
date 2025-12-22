@@ -12,6 +12,8 @@ import { Category } from '@app/database/schemas/category.schema';
 import { Like } from '@app/database/schemas/like.schema';
 import { OrderService } from '../order/order.service';
 import { Following } from '@app/database/schemas/following.schema';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class AuctionService {
@@ -26,6 +28,8 @@ export class AuctionService {
 
     private readonly auctionGateway: AuctionGateway,
     private readonly orderService: OrderService,
+     private readonly notificationGateway: NotificationGateway,
+        private readonly notificationService: NotificationService
   ) {}
 
   async createAuction(createDto: any, sellerId: string): Promise<Auction> {
@@ -424,6 +428,7 @@ async getAuctions(filters: GetAuctionItemsDto, userId?: string) {
     // );
 
     await this.endActiveAuctions();
+    
   }
 
   async endActiveAuctions() {

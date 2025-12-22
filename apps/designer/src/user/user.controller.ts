@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { DesignerProfileDto, DesignerProfileUpdatingDto } from './user.dto';
@@ -82,6 +82,26 @@ export class UserController {
           avatarFile, 
           bannerFile  
       );
+  }
+
+@UseGuards(OptionalJwtGuard)
+  @Get(':id/followers')
+  async getFollowers(
+    @Param('id') id: string, 
+    @Req() req
+  ) {
+    const currentUserId = req.user?.userId || req.user?.id || null; 
+    return this.userService.getFollowers(id, currentUserId);
+  }
+
+  @UseGuards(OptionalJwtGuard)
+  @Get(':id/following')
+  async getFollowing(
+    @Param('id') id: string, 
+    @Req() req
+  ) {
+    const currentUserId = req.user?.userId || req.user?.id || null;
+    return this.userService.getFollowing(id, currentUserId);
   }
     
 }

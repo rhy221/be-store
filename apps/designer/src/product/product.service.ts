@@ -11,6 +11,9 @@ import { DesignerProfile } from '@app/database/schemas/designerProfile.shema';
 import { Collection } from '@app/database/schemas/collection.schema';
 import { ProductView } from '@app/database/schemas/product-view.schema';
 import { StorageService } from '@app/storage';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationType } from '../notification/notificatio.dto';
 
 export type ModelFile = {
   publicId: string; 
@@ -34,6 +37,8 @@ export class ProductService {
                 @InjectModel(Following.name) private readonly followingModel: Model<Following>,
                 @InjectModel(Collection.name) private readonly collectionModel: Model<Collection>,
                 @InjectModel(ProductView.name) private readonly productViewModel: Model<ProductView>,
+                private readonly notificationService: NotificationService,
+                private readonly notificationGateway: NotificationGateway,
                 private readonly storageService: StorageService,
 
 
@@ -628,6 +633,10 @@ query.title = { $regex: search, $options: 'i' };  }
 
         if (!design) throw new NotFoundException('Product not found');
 
+        const viewer = await this.designerModel.findOne({userId: new Types.ObjectId(userId)}).exec();
+
+        if (!viewer) throw new NotFoundException('User not found');
+
         const like = await this.likeModel.findOne({
            designId: new Types.ObjectId(designId),
             viewerId: new Types.ObjectId(userId)
@@ -661,6 +670,15 @@ query.title = { $regex: search, $options: 'i' };  }
             await this.designerModel.findOneAndUpdate({userId: new Types.ObjectId(design.designerId)}, {
         $inc: { likeCount: 1 }
       });
+          await this.notificationService.create({
+            userId: userId,
+            title: `${viewer.name} like your design`,
+            type: NotificationType.LIKE,
+            thumbnail: viewer.avatarUrl || '',
+            link: `/detail/${designId}`,
+            relatedEntityId: designId,
+          });
+
 
           return { liked: true, message: 'Product liked' };
         }
@@ -683,6 +701,9 @@ query.title = { $regex: search, $options: 'i' };  }
 
     const designer = await this.designerModel.findOne({userId: new Types.ObjectId(designerId)});
     if (!designer) throw new NotFoundException('Designer not found');
+
+    const follower = await this.designerModel.findOne({userId: new Types.ObjectId(userId)});
+    if (!follower) throw new NotFoundException('Follower not found');
 
     const following = await this.followingModel.findOne({
         designerId: new Types.ObjectId(designerId), 
@@ -718,6 +739,15 @@ query.title = { $regex: search, $options: 'i' };  }
       await this.designerModel.findOneAndUpdate({userId: new Types.ObjectId(designerId)}, {
         $inc: { followerCount: 1 }
       });
+
+        await this.notificationService.create({
+            userId: userId,
+            title: `${follower.name} follow you`,
+            type: NotificationType.FOLLOW,
+            thumbnail: follower.avatarUrl || '',
+            link: `/portfolio/${follower.userId.toString()}`,
+            relatedEntityId: follower.userId.toString(),
+          });
 
       return { followed: true, message: 'Designer followed' };
     }
@@ -1245,6 +1275,16 @@ async findAllDesignerLikedModels(designerId: string, query: GetUserDesignsDto, v
       }
       throw error;
     }
+  }
+
+  async getLikesByDesignId(designId: string) {
+    const likes = await this.likeModel
+      .find({ designId: new Types.ObjectId(designId) })
+      .populate('viewerProfile', 'name avatarUrl bio userId') // Populate user profile info
+      .lean();
+
+    // Map to return a clean list of profiles
+    return likes.map(like => like.viewerProfile).filter(profile => profile !== null);
   }
 
 }

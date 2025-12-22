@@ -5,14 +5,6 @@ class CartItem {
   @Prop({ type: Types.ObjectId, ref: 'Design', required: true })
   productId: Types.ObjectId;
 
-  // @Prop()
-  // title: string;
-
-  // @Prop()
-  // ownerName: string;
-
-  // @Prop()
-  // imageUrl: string;
 
 }
 
@@ -24,8 +16,6 @@ export class Cart extends Document {
   @Prop({ type: [CartItem], default: [] })
   items: CartItem[];
 
-  // @Prop({ default: 0 })
-  // totalAmount: number;
 }
 
 export const CartSchema = SchemaFactory.createForClass(Cart);

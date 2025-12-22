@@ -18,6 +18,7 @@ import { RatingModule } from './rating/rating.module';
 import { CommentModule } from './comment/comment.module';
 import { SalesModule } from './sales/sales.module';
 import { TryonModule } from './tryon/tryon.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { TryonModule } from './tryon/tryon.module';
     CommentModule,
     SalesModule,
     TryonModule,
+    NotificationModule,
   ],
   controllers: [DesignerController],
   providers: [DesignerService],

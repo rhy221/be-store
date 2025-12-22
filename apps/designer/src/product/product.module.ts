@@ -13,6 +13,7 @@ import { Following, FollowingSchema } from '@app/database/schemas/following.sche
 import { Purchase, PurchaseSchema } from '@app/database/schemas/purchase.schema';
 import { Collection, CollectionSchema } from '@app/database/schemas/collection.schema';
 import { ProductView, ProductViewSchema } from '@app/database/schemas/product-view.schema';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [MongooseModule.forFeature([
@@ -28,7 +29,9 @@ import { ProductView, ProductViewSchema } from '@app/database/schemas/product-vi
 
   ]),
   StorageModule,
-  ConvertModule],
+  ConvertModule,
+  NotificationModule,
+],
   controllers: [ProductController],
   providers: [ProductService]
 })

@@ -7,6 +7,9 @@ import { Order } from '@app/database/schemas/order.shema';
 import { Design } from '@app/database/schemas/design.schema';
 import { Purchase } from '@app/database/schemas/purchase.schema';
 import { GetMyOrdersDto } from './order.dto';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/notificatio.dto';
 
 @Injectable()
 export class OrderService {
@@ -14,7 +17,9 @@ export class OrderService {
     @InjectModel(Order.name) private orderModel: Model<Order>,
     @InjectModel(Purchase.name) private purchaseModel: Model<Purchase>,
     @InjectModel(Design.name) private designModel: Model<Design>,
-    private cartService: CartService,
+    private readonly cartService: CartService,
+    private readonly notificationGateway: NotificationGateway,
+    private readonly notificationService: NotificationService
   ) {}
 
   async createOrder(userId: string, paymentMethod: string) {
@@ -56,14 +61,34 @@ export class OrderService {
         });
 
         // Update product statistics
-        await this.designModel.findByIdAndUpdate(item.productId, {
-          $inc: { purchaseCount: 1, totalEarning: item.price }
-        });
+       const updatedDesign = await this.designModel.findByIdAndUpdate(
+          item.productId,
+          { 
+            $inc: { purchaseCount: 1, totalEarning: item.price } 
+          },
+          { new: true } 
+        ).exec();
+
+        if (updatedDesign && updatedDesign.designerId) {
+            // if (updatedDesign.designerId.toString() !== userId) {
+                await this.notificationService.create({
+                    userId: updatedDesign.designerId.toString(), // ID của Designer
+                    title: 'Item Sold!',
+                    message: `You sold "${updatedDesign.title}" for ${item.price}VND`,
+                    type: NotificationType.ORDER_PURCHASED, // Enum bạn đã định nghĩa
+                    thumbnail: updatedDesign.imageUrls?.[0] || '', // Lấy ảnh đầu tiên làm thumbnail
+                    // link: `/dashboard/analytics` // 
+                    relatedEntityId: (updatedDesign._id as Types.ObjectId).toString(),
+                });
+            // }
+        }
       })
     );
 
     // Clear cart
     await this.cartService.clearCart(userId);
+
+    
 
     return order;
   }
@@ -111,6 +136,26 @@ export class OrderService {
     await this.designModel.findByIdAndUpdate(productId, {
           $inc: { purchaseCount: 1, totalEarning: product.currentPrice || 0 }
     }).session(session); // <-- Truyền session vào đây
+
+     await this.notificationService.create({
+                    userId: userId, 
+                    title: 'You won the auction',
+                    message: `You won "${product.title}" for ${product.currentPrice}VND`,
+                    type: NotificationType.AUCTION,
+                    thumbnail: product.imageUrls?.[0] || '',
+                    // link: `/dashboard/analytics` //,
+                    relatedEntityId: (order._id as Types.ObjectId).toString(),
+                });
+     await this.notificationService.create({
+                    userId: product.designerId.toString(), // ID của Designer
+                    title: 'Item Sold!',
+                    message: `You sold "${product.title}" for ${product.currentPrice}VND`,
+                    type: NotificationType.ORDER_PURCHASED, // Enum bạn đã định nghĩa
+                    thumbnail: product.imageUrls?.[0] || '', // Lấy ảnh đầu tiên làm thumbnail
+                    // link: `/dashboard/analytics` // (Optional) Link tới trang quản lý doanh thu của designer
+                    relatedEntityId: (order._id as Types.ObjectId).toString(),
+                });
+            
 
     return order;
 }
