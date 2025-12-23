@@ -92,7 +92,7 @@ export class UserService {
      
       const userId = new Types.ObjectId(id);
       if(opt === 'basics') {
-        return await this.desingerProfileModel.findOne({userId}).select('userId name avatarUrl bio');
+        return await this.desingerProfileModel.findOne({userId}).select('userId name email avatarUrl bio');
       }
       else if(opt === 'statics') {
         return await this.desingerProfileModel.findOne({userId}).select('followerCount followingCount totalDesigns totalSold totalRevenue likeCount rating');

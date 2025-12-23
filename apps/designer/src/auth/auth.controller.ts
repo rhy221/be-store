@@ -5,6 +5,7 @@ import { MailService } from '../mail/mail.service';
 import * as bcrypt from 'bcryptjs';
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { ForgotPasswordDto, LoginDto, RegisterDto, ResendEmailVerificationDto, ResetPasswordDto, VerifyMailDto } from './auth.dto';
+import { Types } from 'mongoose';
 
 @Controller('auth')
 export class AuthController {
@@ -60,12 +61,19 @@ export class AuthController {
     async verifyMail(@Body() dto: VerifyMailDto) {
         const payload = this.authService.verifyJwt(dto.token);
         const user = await this.userService.verifyUser(payload['userId'], true);
-        await this.userService.createInitialProfile(payload['userId'], payload['email']);
+        const userProfile = await this.userService.createInitialProfile(payload['userId'], payload['email']);
         const token = this.authService.createJwt(user!);
-        
-        return {
-            token: token,
-        }
+
+       const result =  {
+                    user: {
+                        id: userProfile?.userId,
+                        email: userProfile?.email,
+                        name: userProfile?.name,
+                        avatarUrl: userProfile?.avatarUrl,
+                    },
+                    accessToken: token,
+                };  
+                return result; 
     }
 
     @Post('login')
@@ -78,7 +86,7 @@ export class AuthController {
             
             if(isTheSame) {
                 const token = this.authService.createJwt(user);
-                const userProfile = await this.userService.findUserProfile(user._id as string, "basics");
+                const userProfile = await this.userService.findUserProfile((user._id as Types.ObjectId).toString(), "basics");
                 const result =  {
                     user: {
                         id: userProfile?.userId,

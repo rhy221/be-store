@@ -91,11 +91,12 @@ async getCart(userId: string) {
   async addToCart(userId: string, productId: string) {
     const product = await this.designModel.findById(productId).exec();
     if (!product) throw new NotFoundException('Product not found');
+    if(userId === product.designerId.toString()) throw new BadRequestException('Cannot buy your own design');
 
     // Check if already purchased
     const purchase = await this.purchaseModel.findOne({ userId: new Types.ObjectId(userId), productId: new Types.ObjectId(productId) });
     if (purchase) {
-      throw new BadRequestException('You already own this product');
+      throw new BadRequestException('You already own this design');
     }
 
     let cart = await this.cartModel.findOne({ userId: new Types.ObjectId(userId) });
@@ -113,7 +114,7 @@ async getCart(userId: string) {
     );
 
     if (existingItem) {
-      throw new BadRequestException('Product already in cart');
+      throw new BadRequestException('Design already in cart');
     }
 
     cart.items.push({

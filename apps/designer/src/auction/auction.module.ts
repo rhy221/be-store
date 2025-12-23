@@ -13,6 +13,7 @@ import { Like, LikeSchema } from '@app/database/schemas/like.schema';
 import { OrderModule } from '../order/order.module';
 import { Following, FollowingSchema } from '@app/database/schemas/following.schema';
 import { NotificationModule } from '../notification/notification.module';
+import { ProductModule } from '../product/product.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { NotificationModule } from '../notification/notification.module';
     ScheduleModule.forRoot(),
     StorageModule,
     OrderModule,
+    ProductModule,
     NotificationModule
   ],
   controllers: [AuctionController],
