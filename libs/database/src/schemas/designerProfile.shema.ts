@@ -1,5 +1,5 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import { Document, Types } from "mongoose";
 
 @Schema({
     timestamps: true,
@@ -7,14 +7,20 @@ import { Document } from "mongoose";
 })
 export class DesignerProfile extends Document {
 
-    @Prop({required: true, unique: true})
-    userId: string;
+    @Prop({type: Types.ObjectId, required: true, unique: true})
+    userId: Types.ObjectId;
 
     @Prop()
     name: string;
 
+    @Prop({unique: true})
+    email: string
+
     @Prop()
     avatarUrl: string;
+
+    @Prop()
+    bannerUrl: string;
 
     @Prop()
     bio: string;
@@ -24,6 +30,9 @@ export class DesignerProfile extends Document {
 
     @Prop()
     followerCount: number;
+
+    @Prop()
+    followingCount: number;
 
     @Prop()
     totalDesigns: number;

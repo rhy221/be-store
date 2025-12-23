@@ -4,14 +4,15 @@ import { Document } from "mongoose";
 @Schema({timestamps: true})
 export class Category extends Document {
 
-    @Prop()
-    name: string;
+    @Prop({ required: true })
+  name: string; // Ví dụ: "Tops"
 
-    @Prop()
-    description: string;
-    
-    @Prop()
-    parentCategoryId: string; 
+  @Prop({ required: true, unique: true })
+  slug: string; // Ví dụ: "tops"
+
+
+  @Prop({ type: [String], default: [] })
+  styles: string[];
     
 
 }
