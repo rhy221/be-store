@@ -37,6 +37,15 @@
         "tsConfigPath": "libs/common/tsconfig.lib.json"
       }
     },
+    "convert": {
+      "type": "library",
+      "root": "libs/convert",
+      "entryFile": "index",
+      "sourceRoot": "libs/convert/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/convert/tsconfig.lib.json"
+      }
+    },
     "customer": {
       "type": "application",
       "root": "apps/customer",

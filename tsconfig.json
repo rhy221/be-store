@@ -28,6 +28,12 @@
       "@app/common/*": [
         "libs/common/src/*"
       ],
+      "@app/convert": [
+        "libs/convert/src"
+      ],
+      "@app/convert/*": [
+        "libs/convert/src/*"
+      ],
       "@app/database": [
         "libs/database/src"
       ],
