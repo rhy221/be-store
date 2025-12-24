@@ -13,29 +13,29 @@ export class UserController {
             private readonly storageService: StorageService
     ){}
     
-    @UseGuards(OptionalJwtGuard)
-    @Get('profile')
-    async getProfile(@Req() req, @Query('infor') opt: 'basics' | 'statics'){
-        const id = req.user.userId;
-        const email = req.user.email;
-        let profile;
+    // @UseGuards(OptionalJwtGuard)
+    // @Get('profile')
+    // async getProfile(@Req() req, @Query('infor') opt: 'basics' | 'statics'){
+    //     const id = req.user.userId;
+    //     const email = req.user.email;
+    //     let profile;
     
 
         
-        if(opt === 'basics') {
-            profile = await this.userService.findUserProfile(id, 'basics')
-        } else if(opt === 'statics') {
-            profile = await this.userService.findUserProfile(id, 'statics')
-        } else {
-            profile = await this.userService.findUserProfile(id)
-        }
+    //     if(opt === 'basics') {
+    //         profile = await this.userService.findUserProfile(id, 'basics')
+    //     } else if(opt === 'statics') {
+    //         profile = await this.userService.findUserProfile(id, 'statics')
+    //     } else {
+    //         profile = await this.userService.findUserProfile(id)
+    //     }
 
-        return {
-                email: email,
-                ...profile
-        }
+    //     return {
+    //             email: email,
+    //             ...profile
+    //     }
 
-    }
+    // }
 
     @UseGuards(OptionalJwtGuard)
     @Get('portfolio')
@@ -44,18 +44,18 @@ export class UserController {
       return this.userService.findUserPortfolio(userId, viewerId);
     }
 
-    @UseGuards(JwtGuard)
-    @UseInterceptors(FileInterceptor('avatar'))
-    @Patch('profile')
-    async updateProfile(@UploadedFile() file: Express.Multer.File,@Req() req,  @Body() dto: DesignerProfileUpdatingDto){
-        if(file)
-            console.log('file exist');
-        else console.log('not')
-        const userId = req.user.userId;
-        const result = await this.storageService.upload(file);
-        // dto.avatarUrl = result.url;
-        return await this.userService.updateUserProfile(userId, dto);
-    }
+    // @UseGuards(JwtGuard)
+    // @UseInterceptors(FileInterceptor('avatar'))
+    // @Patch('profile')
+    // async updateProfile(@UploadedFile() file: Express.Multer.File,@Req() req,  @Body() dto: DesignerProfileUpdatingDto){
+    //     if(file)
+    //         console.log('file exist');
+    //     else console.log('not')
+    //     const userId = req.user.userId;
+    //     const result = await this.storageService.upload(file);
+    //     // dto.avatarUrl = result.url;
+    //     return await this.userService.updateUserProfile(userId, dto);
+    // }
 
     @UseGuards(JwtGuard)
   @UseInterceptors(FileFieldsInterceptor([
