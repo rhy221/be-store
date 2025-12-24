@@ -19,12 +19,9 @@ export class UserController {
         const id = req.user.userId;
         const email = req.user.email;
         let profile;
+    
 
-        // KIỂM TRA BỔ SUNG ĐỂ NGĂN CASTERROR:
-        if (!id) {
-            throw new BadRequestException('User ID is missing in the authentication token.');
-        }
-
+        
         if(opt === 'basics') {
             profile = await this.userService.findUserProfile(id, 'basics')
         } else if(opt === 'statics') {
