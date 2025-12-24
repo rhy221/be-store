@@ -14,7 +14,8 @@ export class Category extends Document {
   @Prop({ type: [String], default: [] })
   styles: string[];
     
-
+@Prop({ default: false })
+  isDeleted: boolean;
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

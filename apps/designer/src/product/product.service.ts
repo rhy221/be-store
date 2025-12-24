@@ -225,7 +225,7 @@ export class ProductService {
     }
 
     async getCategories() {
-        return await this.categoryModel.find();
+        return await this.categoryModel.find({isDeleted: false});
     }
 
     async getPurchasedHistory(designerId: string) {
