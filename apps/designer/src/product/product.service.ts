@@ -79,12 +79,11 @@ export class ProductService {
     }
 
     async getOneById(id: string, userId?: string) {
+      
+        await this.trackProductView(id, userId);
 
         const design = await this.designModel
-            .findByIdAndUpdate(id,
-               { $inc: { viewCount: 1 } }, 
-              { new: true } 
-            )
+            .findById(id)
             .populate('designerProfile')
             .exec();
 
@@ -100,7 +99,6 @@ export class ProductService {
             designerId: new Types.ObjectId(design.designerId), 
             followerId: new Types.ObjectId(userId)
         });
-
         return {
           ...design.toJSON(),
           isLiked: like ? true : false,
@@ -1259,16 +1257,21 @@ async findAllDesignerLikedModels(designerId: string, query: GetUserDesignsDto, v
 
   async trackProductView(productId: string, userId?: string, ipAddress?: string, userAgent?: string) {
     try {
-      await this.productViewModel.create({
-        productId,
+       const design = await this.designModel.findById(productId);
+      if(design) {
+        await this.productViewModel.create({
+        productId: new Types.ObjectId(productId),
         userId: userId ? new Types.ObjectId(userId) : undefined,
         ipAddress,
         userAgent,
         viewedAt: new Date(),
       });
+        design.viewCount ++;
+        await design.save();
+              return { viewed: true };
+      }
+      return { viewed: false, message: 'Design not found' };
 
-      await this.designModel.findByIdAndUpdate(productId, { $inc: { views: 1 } });
-      return { viewed: true };
     } catch (error: any) {
       if (error.code === 11000) {
         return { viewed: false, message: 'Already viewed recently' };

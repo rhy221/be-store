@@ -33,6 +33,7 @@ import { NotificationModule } from '../notification/notification.module';
   NotificationModule,
 ],
   controllers: [ProductController],
-  providers: [ProductService]
+  providers: [ProductService],
+  exports: [ProductService]
 })
 export class ProductModule {}

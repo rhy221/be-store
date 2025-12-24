@@ -14,6 +14,7 @@ import { OrderService } from '../order/order.service';
 import { Following } from '@app/database/schemas/following.schema';
 import { NotificationGateway } from '../notification/notification.gateway';
 import { NotificationService } from '../notification/notification.service';
+import { ProductService } from '../product/product.service';
 
 @Injectable()
 export class AuctionService {
@@ -28,8 +29,8 @@ export class AuctionService {
 
     private readonly auctionGateway: AuctionGateway,
     private readonly orderService: OrderService,
-     private readonly notificationGateway: NotificationGateway,
-        private readonly notificationService: NotificationService
+
+        private readonly productService: ProductService,
   ) {}
 
   async createAuction(createDto: any, sellerId: string): Promise<Auction> {
@@ -288,12 +289,11 @@ async getAuctions(filters: GetAuctionItemsDto, userId?: string) {
 }
 
  async getAuctionById(id: string, viewerId?: string) {
+  
+  await this.productService.trackProductView(id, viewerId);
   const auction = await this.designModel
-    .findByIdAndUpdate(
-      id,
-      { $inc: { viewCount: 1 } }, 
-      { new: true }               
-    )
+    .findOne(
+      {_id: new Types.ObjectId(id), type: 'auction'})
     .populate('designerProfile', 'name email avatarUrl')      // Populate Designer
     .populate('currentWinnerProfile', 'name email avatarUrl') // Populate Winner
     .exec();
@@ -310,7 +310,6 @@ async getAuctions(filters: GetAuctionItemsDto, userId?: string) {
             designerId: new Types.ObjectId(auction.designerId), 
             followerId: new Types.ObjectId(viewerId)
         });
-
   return {
     ...auction.toJSON(),
     isLiked: like ? true : false,

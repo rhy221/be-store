@@ -3,7 +3,7 @@ import { Document, Types } from 'mongoose';
 
 @Schema({ timestamps: true })
 export class ProductView extends Document {
-  @Prop({ type: Types.ObjectId, ref: 'Product', required: true })
+  @Prop({ type: Types.ObjectId, ref: 'Design', required: true })
   productId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
@@ -15,7 +15,7 @@ export class ProductView extends Document {
   @Prop()
   userAgent: string;
 
-  @Prop({ default: Date.now, expires: 86400 })
+  @Prop({ default: Date.now, expires: 900 })
   viewedAt: Date;
 }
 export const ProductViewSchema = SchemaFactory.createForClass(ProductView);
