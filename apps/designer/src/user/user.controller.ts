@@ -47,11 +47,16 @@ export class UserController {
     @UseGuards(JwtGuard)
     @UseInterceptors(FileInterceptor('avatar'))
     @Patch('profile')
-    async updateProfile(@UploadedFile() file: Express.Multer.File,@Req() req,  @Body() dto: DesignerProfileUpdatingDto){
+    async updateProfile(@UploadedFile() file: Express.Multer.File,@Req() req,   @Body() dto: DesignerProfileUpdatingDto){
         if(file)
             console.log('file exist');
         else console.log('not')
         const userId = req.user.userId;
+        
+        if (!userId) {
+            throw new BadRequestException('User ID is missing in the authentication token.');
+        }
+
         const result = await this.storageService.upload(file);
         // dto.avatarUrl = result.url;
         return await this.userService.updateUserProfile(userId, dto);
