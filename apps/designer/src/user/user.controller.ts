@@ -19,7 +19,9 @@ export class UserController {
         const id = req.user.userId;
         const email = req.user.email;
         let profile;
+    
 
+        
         if(opt === 'basics') {
             profile = await this.userService.findUserProfile(id, 'basics')
         } else if(opt === 'statics') {
