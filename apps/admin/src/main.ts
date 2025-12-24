@@ -16,7 +16,7 @@ async function bootstrap() {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   
   app.setGlobalPrefix('api'); 
-  await app.listen(PORT);
+  await app.listen(3001);
   console.log(`Admin module running on port ${PORT}`);  
 }
 

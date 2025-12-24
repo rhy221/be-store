@@ -83,7 +83,6 @@ export class ProductController {
             throw new BadRequestException("image is required")
         if(!files.models)
             throw new BadRequestException("model is required")
-        console.log(files.models.length);
         const designerId = req.user.userId;
         // console.log(files.models[0].path);
         // const path = await this.convertService.convertFbxToGltf(files.models[0].path, files.models[0].path.replace('.fbx', '.glb'));
@@ -171,7 +170,7 @@ export class ProductController {
     async getGalleryItems(
       @Query() query: GetGalleryItemsDto,
       @Req() req
-    ) {      console.log(query);
+    ) {      
 
         const userId = req?.user?.userId; 
         return this.productService.getGalleryItems(query, userId);
@@ -220,7 +219,6 @@ export class ProductController {
   @Get('my-products')
   @UseGuards(JwtGuard)
   async getMyProducts(@Query() query: any, @Req() req) {
-    console.log(query);
     return this.productService.getMyProducts(req.user.userId, query);
   }
 

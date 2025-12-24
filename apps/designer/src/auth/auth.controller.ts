@@ -80,7 +80,7 @@ export class AuthController {
     async login(@Body() dto: LoginDto) {
         
         const user = await this.userService.findOneByEmail(dto.email);
-        
+     
         if(user != null && user.verified) {
             const isTheSame = await bcrypt.compare(dto.password, user.password)
             
