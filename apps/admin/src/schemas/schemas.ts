@@ -13,8 +13,7 @@ export class User extends Document {
   role: string;
 
   @Prop({
-    type: String,
-    enum: ['active', 'blocked', 'pending'],
+    enum: ['active', 'banned'],
     default: 'active',
   })
   state: string;
@@ -212,19 +211,41 @@ export class Designer extends Document {
 export const DesignerSchema = SchemaFactory.createForClass(Designer);
 
 
-@Schema({ timestamps: true, versionKey: false })
+@Schema({ timestamps: true })
 export class UnlockRequest extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   userId: Types.ObjectId;
 
-  @Prop({ required: true })
-  reason: string;
-
-  @Prop({ default: 'pending' })
+  @Prop({ enum: ['pending', 'processed'] ,default: 'pending' })
   status: string;
 
-  createdAt: Date;
-  updatedAt: Date;
+  @Prop({ default: 'pending' })
+  rejectReason: string;
+
 }
 
 export const UnlockRequestSchema = SchemaFactory.createForClass(UnlockRequest);
+
+
+@Schema({ timestamps: true }) 
+export class BanLog extends Document {
+  @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  targetUserId: Types.ObjectId; 
+
+  // @Prop({ type: Types.ObjectId, ref: 'User', required: true })
+  // actorId: Types.ObjectId; 
+
+  @Prop({ 
+    required: true, 
+    enum: ['ban', 'unban', 'reject_unlock'] 
+  })
+  action: string; // Loại hành động
+
+  @Prop({ required: true })
+  reason: string; // Lý do thực hiện
+
+  // @Prop({ type: Date })
+  // expiresAt: Date; // (Tùy chọn) Ngày hết hạn nếu là ban có thời hạn
+}
+
+export const BanLogSchema = SchemaFactory.createForClass(BanLog);

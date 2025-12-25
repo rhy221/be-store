@@ -37,8 +37,8 @@ export class AdminController {
   }
 
   @Get('categories/:id/products')
-  getCategoryProducts(@Param('id') id: string, @Query('search') search?: string) {
-    return this.adminService.getCategoryProducts(id, search)
+  getCategoryProducts(@Param('id') id: string, @Query() param: any) {
+    return this.adminService.getCategoryProducts(id, param)
   }
 
   @Post('categories')
@@ -96,11 +96,23 @@ export class AdminController {
     return this.adminService.getUnlockRequests()
   }
 
-  @Patch('users/:id/state')
-  updateUserState(
-    @Param('id') id: string,
-    @Body() dto: { state: 'active' | 'blocked' },
-  ) {
-    return this.adminService.updateUserState(id, dto.state);
-  }
+  // @Patch('users/:id/state')
+  // updateUserState(
+  //   @Param('id') id: string,
+  //   @Body() dto: { state: 'active' | 'banned' },
+  // ) {
+  //   return this.adminService.updateUserState(id, dto.state);
+  // }
+
+@Patch('users/:id/state')
+async toggleUserStatus(
+  @Param('id') id: string,
+  @Body() dto: { state: 'active' | 'banned', reason: string },
+  // @Req() req
+) {
+  return this.adminService.updateUserState(id, dto);
+  
+}
+
+  
 }

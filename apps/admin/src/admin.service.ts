@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { User, Category, Report, Template, Designer, UnlockRequest } from './schemas/schemas';
+import { User, Category, Report, Template, Designer, UnlockRequest, BanLog } from './schemas/schemas';
 
 @Injectable()
 export class AdminService {
@@ -12,6 +12,8 @@ export class AdminService {
     @InjectModel(Template.name) private readonly templateModel: Model<Template>,
     @InjectModel(Designer.name) private readonly designerModel: Model<Designer>,
     @InjectModel(UnlockRequest.name) private readonly unlockRequestModel: Model<UnlockRequest>,
+      @InjectModel(BanLog.name) private readonly banLogModel: Model<BanLog>,
+
   ) {}
 
   async getDashboardStats() {
@@ -65,9 +67,11 @@ export class AdminService {
     return category;
   }
 
-  async getCategoryProducts(categoryId: string, search?: string) {
+  async getCategoryProducts(categoryId: string, param: any) {
+    const {search, style} = param;
     const filter: any = { isDeleted: false, categoryId: new Types.ObjectId(categoryId) };
     if (search) filter.title = new RegExp(search, 'i');
+    if(style) filter.style = style;
     return this.templateModel.find(filter).select('title imageUrls createdAt').lean();
   }
 
@@ -142,15 +146,48 @@ export class AdminService {
   }
 
   async getUnlockRequests() {
-    return this.unlockRequestModel.find().lean();
+    return this.unlockRequestModel
+      .find()
+      .populate('userId', 'email name state') 
+      .sort({ createdAt: -1 }) 
+      .exec();
   }
 
-  async updateUserState(id: string, state: 'active' | 'blocked') {
-  return this.userModel.findByIdAndUpdate(
-    id,
-    { state },
-    { new: true },
+  async createUnlockRequest(userId: string): Promise<UnlockRequest> {
+    const newRequest = new this.unlockRequestModel({
+      userId: new Types.ObjectId(userId),
+    });
+    
+    return newRequest.save();
+  }
+
+//   async updateUserState(id: string, state: 'active' | 'banned') {
+//   return this.userModel.findByIdAndUpdate(
+//     id,
+//     { state },
+//     { new: true },
+//   );
+// }
+
+ async updateUserState(id: string, dto: { state: 'active' | 'banned', reason: string }) {
+  // 1. Cập nhật User
+  const user = await this.userModel.findByIdAndUpdate(
+    id, 
+    { state: dto.state }, 
+    { new: true }
   );
+
+  if(!user) throw new NotFoundException("User not found");
+
+  // 2. Tạo BanLog
+  await new this.banLogModel({
+    targetUserId: id,
+    // actorId: adminId,
+    action: dto.state === 'banned' ? 'ban' : 'unban',
+    reason: dto.reason
+  }).save();
+
+  return user;
 }
 
 }
