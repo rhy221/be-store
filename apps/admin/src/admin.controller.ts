@@ -1,5 +1,6 @@
 import { Controller, Get, Query, Param, Post, Body, Patch } from '@nestjs/common'
 import { AdminService } from './admin.service'
+import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './admin.dto'
 
 @Controller('admin')
 export class AdminController {
@@ -113,6 +114,29 @@ async toggleUserStatus(
   return this.adminService.updateUserState(id, dto);
   
 }
+
+@Post('login')
+    async login(@Body() dto: LoginDto) {
+        return this.adminService.login(dto);
+    }
+
+@Post('register')
+    async register(@Body() dto: {email: string, password: string}) {
+
+      return this.adminService.register(dto);
+    }
+
+    @Post('forgot-password')
+    async forgotPassword(@Body() dto: ForgotPasswordDto) {
+
+        return this.adminService.forgotPassword(dto);
+    }
+
+    @Post('reset-password')
+    async resetPassword(@Body() dto: ResetPasswordDto) {
+        return this.adminService.resetPassword(dto);
+    }
+
 
   
 }

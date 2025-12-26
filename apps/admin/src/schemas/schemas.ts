@@ -1,29 +1,86 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
 
-@Schema({ timestamps: true, versionKey: false })
+@Schema({timestamps: true})
 export class User extends Document {
-  @Prop({ required: true })
-  name: string;
+    
+    @Prop({required: true, unique:true})
+    email:string;
 
-  @Prop({ required: true, unique: true })
-  email: string;
+    @Prop({required: true})
+    password: string;
 
-  @Prop({ required: true, enum: ['designer', 'customer'], default: 'customer' })
-  role: string;
+    @Prop()
+    role: ("customer" | "designer" | "admin")[];
 
-  @Prop({
-    enum: ['active', 'banned'],
-    default: 'active',
-  })
-  state: string;
+    @Prop()
+    state: "active" | "banned"
 
-  createdAt: Date;
-  updatedAt: Date;
+    @Prop()
+    verified: boolean;
+
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
+UserSchema.pre('save', async function (next) {
+    if(!this.isModified('password')) return next;
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
+});
+
+@Schema({
+    timestamps: true,
+    collection: 'designerProfiles',
+})
+export class DesignerProfile extends Document {
+
+    @Prop({type: Types.ObjectId, required: true, unique: true})
+    userId: Types.ObjectId;
+
+    @Prop()
+    name: string;
+
+    @Prop({unique: true})
+    email: string
+
+    @Prop()
+    avatarUrl: string;
+
+    @Prop()
+    bannerUrl: string;
+
+    @Prop()
+    bio: string;
+
+    @Prop()
+    status: 'active' | 'banned';
+
+    @Prop()
+    followerCount: number;
+
+    @Prop()
+    followingCount: number;
+
+    @Prop()
+    totalDesigns: number;
+
+    @Prop()
+    totalSold: number;
+
+    @Prop()
+    totalRevenue: number;
+
+    @Prop()
+    likeCount: number;
+
+    @Prop()
+    rating: number;
+}
+
+export const DesignerProfileSchema = SchemaFactory.createForClass(DesignerProfile);
 
 @Schema({ timestamps: true, versionKey: false })
 export class Category extends Document {
@@ -249,3 +306,29 @@ export class BanLog extends Document {
 }
 
 export const BanLogSchema = SchemaFactory.createForClass(BanLog);
+
+
+@Schema({
+    timestamps: true,
+    collection: 'adminProfiles',
+})
+export class AdminProfile extends Document {
+
+    @Prop({type: Types.ObjectId, required: true, unique: true})
+    userId: Types.ObjectId;
+
+    @Prop()
+    name: string;
+
+    @Prop({unique: true})
+    email: string
+
+    @Prop()
+    avatarUrl: string;
+
+    @Prop({default: 'active'})
+    status: 'active' | 'banned';
+
+}
+
+export const AdminProfileSchema = SchemaFactory.createForClass(AdminProfile);

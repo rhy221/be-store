@@ -1,20 +1,43 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { User, Category, Report, Template, Designer, UnlockRequest, BanLog } from './schemas/schemas';
+import * as jwt from 'jsonwebtoken'
+import { ConfigService } from '@nestjs/config';
+import { JwtSignOptions } from '@nestjs/jwt';
+import { User, Category, Report, Template, Designer, UnlockRequest, BanLog, AdminProfile } from './schemas/schemas';
+import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './admin.dto';
+import * as bcrypt from 'bcryptjs';
+import * as nodemailer from 'nodemailer';
 
 @Injectable()
 export class AdminService {
+
+  private transporter: nodemailer.Transporter;
+    
+        
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(AdminProfile.name) private readonly adminModel: Model<AdminProfile>,
     @InjectModel(Category.name) private readonly categoryModel: Model<Category>,
     @InjectModel(Report.name) private readonly reportModel: Model<Report>,
     @InjectModel(Template.name) private readonly templateModel: Model<Template>,
     @InjectModel(Designer.name) private readonly designerModel: Model<Designer>,
     @InjectModel(UnlockRequest.name) private readonly unlockRequestModel: Model<UnlockRequest>,
       @InjectModel(BanLog.name) private readonly banLogModel: Model<BanLog>,
+      private readonly configService: ConfigService
 
-  ) {}
+  ) {
+    this.transporter = nodemailer.createTransport({
+                host: 'sandbox.smtp.mailtrap.io',
+                port: 2525,
+                auth: {
+                    user: configService.get<string>('MAIL_USER'),
+                    pass: configService.get<string>('MAIL_PASS')
+                }
+            });
+  }
+
+
 
   async getDashboardStats() {
     const [userCount, categoryCount, templateCount] = await Promise.all([
@@ -189,5 +212,135 @@ export class AdminService {
 
   return user;
 }
+
+async login(dto: LoginDto) {
+  const user = await this.userModel.findOne({email: dto.email});
+        if(user != null) {
+            const isTheSame = await bcrypt.compare(dto.password, user.password)
+            
+            if(isTheSame) {
+                const token = this.createJwt(user);
+                const result =  {
+                    user: {
+                        id: user?._id,
+                        email: user?.email,
+                        name: "",
+                        avatarUrl: "",
+                    },
+                    accessToken: token,
+                };  
+                return result; 
+            }
+           
+        }
+
+        throw new NotFoundException("User not found");
+}
+
+async register(dto: {email: string, password: string}){
+      try {
+        const user = new this.userModel({...dto, role: ['admin'], verified: true});
+        return await user.save();
+      } catch (error) {
+          if (error.code === 11000) {
+            throw new ConflictException(`${dto.email} already exists`);
+      }
+      throw new InternalServerErrorException(error.message);
+      }
+    
+    }
+
+    async forgotPassword(dto: ForgotPasswordDto){
+        const user = await this.userModel.findOne({email: dto.email});
+        
+        if(user != null && user.verified) {
+            const token = this.createJwt(user);
+            return await this.sendResetPassEmail(dto.email, token, dto.origin ?? "");
+        }
+        
+        return {
+            error: 'Email does not exist or has been verified'
+        }
+    
+    }
+
+    async resetPassword(dto: ResetPasswordDto){
+        const payload = this.verifyJwt(dto.token);
+        return await this.resetUserPass(payload['userId'], dto.password)
+    
+    }
+
+    async resetUserPass(id: string, newPass: string) {
+    
+          const salt = await bcrypt.genSalt(10);
+          const hashPass = await bcrypt.hash(newPass , salt);
+          return await this.userModel.findByIdAndUpdate(id, {password: hashPass}, {new: true}).select('email');
+        }
+
+
+ createJwt(user: User): string {
+        return jwt.sign(
+            {
+                userId: user._id,
+                email: user.email
+            },
+            this.configService.get<string>('JWT_SECRET')!,
+            {expiresIn: this.configService.get<string>('JWT_EXPIRES_IN')} as JwtSignOptions
+        );
+    }
+
+    verifyJwt(token: string) {
+        try {
+           return jwt.verify(token, this.configService.get<string>('JWT_SECRET')!);
+        } catch(err) {
+            throw new UnauthorizedException('Token is invalid or expired');
+        }
+    }
+
+    
+    
+        async sendVerificationEmail(to: string, token: string, origin: string) {
+            const verifyUrl = `${origin}/?token=${token}`;
+    
+            const mailOptions = {
+                from: `"HHCloset" <${"support@hhcloset.com"}>`,
+                to,
+                subject: 'Verify your email',
+                html: `
+                    <h3>Email Verification</h3>
+                    <p>Click the link below to verify your email address:</p>
+                    <a href="${verifyUrl}" target="_blank">${verifyUrl}</a>
+                    `,
+            };
+    
+        try {
+          await this.transporter.sendMail(mailOptions);
+          return { message: 'Verification email sent. Please check your inbox.' };
+        } catch (error) {
+          throw new InternalServerErrorException('Failed to send verification email');
+        }
+        }
+    
+        async sendResetPassEmail(to: string, token: string, origin: string) {
+            const resetPassUrl = `${origin}/?token=${token}`;
+    
+            const mailOptions = {
+                from: `"HHCloset" <${"support@hhcloset.com"}>`,
+                to,
+                subject: 'Reset your password',
+                html: `
+                    <h3>Reset your password</h3>
+                    <p>Click the link below to reset your password:</p>
+                    <a href="${resetPassUrl}" target="_blank">${resetPassUrl}</a>
+                    `,
+            };
+    
+        try {
+          await this.transporter.sendMail(mailOptions);
+          return { message: 'Reset password email sent. Please check your inbox.' };
+        } catch (error) {
+          throw new InternalServerErrorException('Failed to send reset password email');
+        }
+        }
 
 }
