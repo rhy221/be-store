@@ -2,7 +2,7 @@ import { Order } from '@app/database/schemas/order.shema';
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, PipelineStage, Types } from 'mongoose';
-import { GetSalesDto } from './sales.dto';
+import { GetAnalyticsDto, GetSalesDto } from './sales.dto';
 
 @Injectable()
 export class SalesService {
@@ -327,5 +327,65 @@ async getSellerSales(designerId: string, query: GetSalesDto) {
         totalPages: Math.ceil(metadata.total / limit),
       }
     };
+}
+async getMonthlyAnalytics(designerId: string, query: GetAnalyticsDto) {
+  const currentYear = new Date().getFullYear();
+  const startYear = query.startYear || currentYear;
+  const endYear = query.endYear || currentYear;
+
+  const start = new Date(startYear, 0, 1);
+  const end = new Date(endYear, 11, 31, 23, 59, 59, 999);
+
+  const pipeline: PipelineStage[] = [
+    { $match: { createdAt: { $gte: start, $lte: end } } },
+    { $unwind: '$items' },
+    {
+      $lookup: {
+        from: 'designs',
+        localField: 'items.productId',
+        foreignField: '_id',
+        as: 'productInfo',
+      },
+    },
+    { $unwind: '$productInfo' },
+    { $match: { 'productInfo.designerId': new Types.ObjectId(designerId) } },
+    {
+      $facet: {
+        // Dữ liệu cho Area Chart và Bar Chart
+        timelineData: [
+          {
+            $group: {
+              _id: { $dateToString: { format: "%Y-%m", date: "$createdAt" } },
+              revenue: { $sum: "$items.price" },
+              itemsSold: { $sum: 1 },
+            },
+          },
+          { $sort: { "_id": 1 } },
+          { $project: { month: "$_id", revenue: 1, itemsSold: 1, _id: 0 } }
+        ],
+        // Dữ liệu cho Pie Chart (Phân loại theo type sản phẩm)
+        categoryData: [
+          {
+            $group: {
+              _id: "$productInfo.type",
+              value: { $sum: "$items.price" }
+            }
+          },
+          { $project: { name: { $toUpper: "$_id" }, value: 1, _id: 0 } }
+        ]
+      }
+    }
+  ];
+
+  const [result] = await this.orderModel.aggregate(pipeline);
+  
+  const totalRevenue = result.timelineData.reduce((acc, curr) => acc + curr.revenue, 0);
+  const totalItemsSold = result.timelineData.reduce((acc, curr) => acc + curr.itemsSold, 0);
+
+  return {
+    summary: { totalRevenue, totalItemsSold },
+    chartData: result.timelineData,
+    pieData: result.categoryData
+  };
 }
 }

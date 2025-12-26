@@ -1,7 +1,7 @@
 import { JwtGuard } from '@app/common/guards/jwt.guard';
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
 import { SalesService } from './sales.service';
-import { GetSalesDto } from './sales.dto';
+import { GetAnalyticsDto, GetSalesDto } from './sales.dto';
 
 @Controller('sales')
 export class SalesController {
@@ -15,4 +15,10 @@ export class SalesController {
     const designerId = req.user.userId; 
     return this.salesService.getSellerSales(designerId, query);
   }
+  @Get('analytics')
+@UseGuards(JwtGuard)
+async getAnalytics(@Query() query: GetAnalyticsDto, @Req() req) {
+  const designerId = req.user.userId;
+  return this.salesService.getMonthlyAnalytics(designerId, query);
+}
 }

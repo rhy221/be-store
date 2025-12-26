@@ -28,3 +28,15 @@ export class GetSalesDto {
   @Min(1)
   limit?: number = 10;
 }
+
+export class GetAnalyticsDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  startYear?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  endYear?: number;
+}
