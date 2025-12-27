@@ -101,7 +101,7 @@ export class AuthController {
            
         }
 
-        throw new UnauthorizedException();
+        throw new UnauthorizedException("Your email or password is wrong");
     }
 
     @Post('reset-password')

@@ -24,6 +24,7 @@ import {
   AdminProfile,
   AdminProfileSchema,
 } from './schemas/schemas';
+import { CommonModule } from '@app/common';
 
 @Module({
   imports: [
@@ -31,7 +32,6 @@ import {
       isGlobal: true,
     }),
     DatabaseModule,
-    MongooseModule.forRoot(process.env.MONGO_URI!),
     MongooseModule.forFeature([
       { name: User.name, schema: UserSchema },
       { name: AdminProfile.name, schema: AdminProfileSchema},
@@ -44,6 +44,7 @@ import {
       
 
     ]),
+    CommonModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

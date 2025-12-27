@@ -1,7 +1,7 @@
 import { Controller, Get, Query, Param, Post, Body, Patch, UseGuards } from '@nestjs/common'
 import { AdminService } from './admin.service'
 import { ForgotPasswordDto, LoginDto, ResetPasswordDto } from './admin.dto'
-import { AdminJwtGuard } from '@app/common/guards/admin-guard.guard'
+import { AdminJwtGuard } from '@app/common/guards/admin-jwt.guard'
 import { OptionalJwtGuard } from '@app/common/guards/optional-jwt.guard'
 
 @UseGuards(AdminJwtGuard)
@@ -124,7 +124,7 @@ async toggleUserStatus(
         return this.adminService.login(dto);
     }
 
-    
+
 @UseGuards(OptionalJwtGuard)
 @Post('register')
     async register(@Body() dto: {email: string, password: string}) {

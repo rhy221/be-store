@@ -1,4 +1,4 @@
-import { AdminJwtGuard } from './admin-guard.guard';
+import { AdminJwtGuard } from './admin-jwt.guard';
 
 describe('AdminGuardGuard', () => {
   it('should be defined', () => {
