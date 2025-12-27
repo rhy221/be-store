@@ -15,7 +15,7 @@ export class User extends Document {
     @Prop()
     role: ("customer" | "designer" | "admin")[];
 
-    @Prop()
+    @Prop({default: "active"})
     state: "active" | "banned"
 
     @Prop()

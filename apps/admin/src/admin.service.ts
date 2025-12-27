@@ -217,7 +217,6 @@ async login(dto: LoginDto) {
   const user = await this.userModel.findOne({email: dto.email});
         if(user != null) {
             const isTheSame = await bcrypt.compare(dto.password, user.password)
-            
             if(isTheSame) {
                 const token = this.createJwt(user);
                 const result =  {
@@ -231,7 +230,7 @@ async login(dto: LoginDto) {
                 };  
                 return result; 
             }
-           
+           throw new UnauthorizedException("Your email or password is wrong")
         }
 
         throw new NotFoundException("User not found");
@@ -239,7 +238,7 @@ async login(dto: LoginDto) {
 
 async register(dto: {email: string, password: string}){
       try {
-        const user = new this.userModel({...dto, role: ['admin'], verified: true});
+        const user = new this.userModel({...dto, role: ['admin'], state: "active", verified: true});
         return await user.save();
       } catch (error) {
           if (error.code === 11000) {
