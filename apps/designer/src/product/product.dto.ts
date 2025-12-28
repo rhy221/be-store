@@ -131,19 +131,65 @@ export class UpdateDesignDto {
     description;
 
     @Transform(({ value }) => {
-        if (typeof value === 'string') return [value]; // Nếu là 1 chuỗi -> biến thành mảng
-        if (!value) return []; // Nếu null/undefined -> mảng rỗng
-        return value; // Nếu đã là mảng -> giữ nguyên
-    })
+  // 1. Nếu không có giá trị, trả về mảng rỗng
+  if (!value) return [];
+
+  // 2. Chuyển đổi mọi thứ về mảng phẳng
+  const rawArray = Array.isArray(value) ? value : [value];
+
+  return rawArray.flatMap((item) => {
+    if (typeof item !== 'string') return item;
+
+    // 3. Thử Parse nếu item là chuỗi JSON (như "['url1', 'url2']")
+    if (item.startsWith('[') && item.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(item);
+        return Array.isArray(parsed) ? parsed : item;
+      } catch (e) {
+        return item;
+      }
+    }
+
+    // 4. Xử lý trường hợp chuỗi bị phân tách bởi dấu phẩy (nếu có)
+    if (item.includes(',')) {
+      return item.split(',').map((s) => s.trim());
+    }
+
+    return item;
+  });
+})
     @IsArray()
     @IsOptional()
     oldImages: string[];
 
-    @Transform(({ value }) => {
-        if (typeof value === 'string') return [value]; // Nếu là 1 chuỗi -> biến thành mảng
-        if (!value) return []; // Nếu null/undefined -> mảng rỗng
-        return value; // Nếu đã là mảng -> giữ nguyên
-    })
+   @Transform(({ value }) => {
+  // 1. Nếu không có giá trị, trả về mảng rỗng
+  if (!value) return [];
+
+  // 2. Chuyển đổi mọi thứ về mảng phẳng
+  const rawArray = Array.isArray(value) ? value : [value];
+
+  return rawArray.flatMap((item) => {
+    if (typeof item !== 'string') return item;
+
+    // 3. Thử Parse nếu item là chuỗi JSON (như "['url1', 'url2']")
+    if (item.startsWith('[') && item.endsWith(']')) {
+      try {
+        const parsed = JSON.parse(item);
+        return Array.isArray(parsed) ? parsed : item;
+      } catch (e) {
+        return item;
+      }
+    }
+
+    // 4. Xử lý trường hợp chuỗi bị phân tách bởi dấu phẩy (nếu có)
+    if (item.includes(',')) {
+      return item.split(',').map((s) => s.trim());
+    }
+
+    return item;
+  });
+})
     @IsArray()
     @IsOptional()
     oldModels: string[];

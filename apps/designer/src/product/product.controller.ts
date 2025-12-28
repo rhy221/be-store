@@ -142,11 +142,19 @@ export class ProductController {
     @Param('id') id: string,
     @Req() req 
     ) {
-        if( (!body.oldImages || body.oldImages.length <= 0) && (!files.images || files.images.length <= 0))
-            throw new BadRequestException("image is required")
-        if((!files.models || files.models.length <= 0) && (!body.oldModels || body.oldModels.length <= 0))
-            throw new BadRequestException("model is required")
-       return this.productService.updateOneById(id, body, files.images!, files.models!);
+        const uploadedImages = files?.images || [];
+    const uploadedModels = files?.models || [];
+    const hasImages = (body.oldImages && body.oldImages.length > 0) || uploadedImages.length > 0;
+    if (!hasImages) {
+        throw new BadRequestException("image is required");
+    }
+
+    const hasModels = (body.oldModels && body.oldModels.length > 0) || uploadedModels.length > 0;
+    if (!hasModels) {
+        throw new BadRequestException("model is required");
+    }
+
+    return this.productService.updateOneById(id, body, uploadedImages, uploadedModels);
 
     }
 
