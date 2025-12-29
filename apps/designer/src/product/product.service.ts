@@ -856,9 +856,9 @@ query.title = { $regex: search, $options: 'i' };  }
       if (design.status === 'active') {
         throw new ForbiddenException('Cannot delete active auctions. Please cancel first.');
       }
-      if (design.status === 'ended' && design.currentWinnerId) {
-        throw new ForbiddenException('Cannot delete auctions with winners');
-      }
+      // if (design.status === 'ended' && design.currentWinnerId) {
+      //   throw new ForbiddenException('Cannot delete auctions with winners');
+      // }
     }
     // Gallery and fixed types can always be deleted
   }
