@@ -627,7 +627,7 @@ query.title = { $regex: search, $options: 'i' };  }
 }
     async likeDesign(userId: string, designId: string) {
 
-        const design = await this.designModel.findById(designId);
+        const design = await this.designModel.findById(designId).exec();
 
         if (!design) throw new NotFoundException('Product not found');
 
@@ -669,7 +669,7 @@ query.title = { $regex: search, $options: 'i' };  }
         $inc: { likeCount: 1 }
       });
           await this.notificationService.create({
-            userId: userId,
+            userId: design.designerId.toString(),
             title: `${viewer.name} like your design`,
             type: NotificationType.LIKE,
             thumbnail: viewer.avatarUrl || '',
